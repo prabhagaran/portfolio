@@ -8,10 +8,12 @@ import {
   ArrowUpRight,
   BookText,
   Download,
+  Eye,
   Mail,
   MapPin,
   Moon,
   Sun,
+  Video,
   Volume2,
   VolumeX,
   X,
@@ -328,11 +330,19 @@ function InfoPanels() {
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              Or drive it like a car: ↑/W throttle, ↓/S reverse, ←→/AD steer.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
               Click a glowing building to open its project details.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
               Scroll the mouse wheel to zoom the camera in and out.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              Press V or the eye icon to swap the follow camera for first-person.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
@@ -390,11 +400,11 @@ export function CityHud({
   perfWarn: boolean;
   onDismissPerf: () => void;
 }) {
-  const { night, toggleNight, audioOn, toggleAudio } = useCity();
+  const { night, toggleNight, audioOn, toggleAudio, viewMode, toggleViewMode } = useCity();
 
   return (
     <div className="pointer-events-none fixed inset-0 z-20">
-      {/* top bar: skip link (always, one click) + day/night */}
+      {/* top bar: skip link (always, one click) + view/audio/day-night */}
       <div className="flex items-start justify-between p-4">
         <Link
           href="/?mode=classic"
@@ -405,6 +415,22 @@ export function CityHud({
           Skip to classic portfolio
         </Link>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={toggleViewMode}
+            aria-label={
+              viewMode === "pov" ? "Switch to follow camera" : "Switch to first-person view"
+            }
+            aria-pressed={viewMode === "pov"}
+            title={viewMode === "pov" ? "Follow camera (V)" : "First-person view (V)"}
+            className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-surface/90 text-slate-200 shadow-card backdrop-blur-sm transition-colors duration-200 hover:border-accent/60"
+          >
+            {viewMode === "pov" ? (
+              <Video className="h-4 w-4 text-blue-300" aria-hidden="true" />
+            ) : (
+              <Eye className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+            )}
+          </button>
           <button
             type="button"
             onClick={toggleAudio}
@@ -435,8 +461,9 @@ export function CityHud({
       </div>
 
       {/* bottom-left hint / bottom-right minimap */}
-      <div className="absolute bottom-4 left-4 hidden max-w-[240px] rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
-        Click the street to move · scroll to zoom · click a building to open its project
+      <div className="absolute bottom-4 left-4 hidden max-w-[260px] space-y-1 rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
+        <p>Click the street to move · or drive it like a car (WASD/arrows)</p>
+        <p>Scroll to zoom · V or the eye icon switches POV</p>
       </div>
       <div className="absolute bottom-4 right-4">
         <Minimap />

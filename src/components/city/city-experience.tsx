@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
-import { CityContext, type PanelId, type Weather } from "./city-context";
+import { CityContext, type PanelId, type ViewMode, type Weather } from "./city-context";
 import { CitySoundscape } from "./audio";
 import { CityScene } from "./scene";
 import { CityHud } from "./hud";
@@ -26,6 +26,7 @@ export function CityExperience() {
     initialNight ? rollWeather() : "clear"
   );
   const [audioOn, setAudioOn] = useState(false); // default off per spec
+  const [viewMode, setViewMode] = useState<ViewMode>("follow");
   const [selected, setSelectedState] = useState<Project | null>(null);
   const [panel, setPanelState] = useState<PanelId>(null);
   const [perfWarn, setPerfWarn] = useState(false);
@@ -57,6 +58,10 @@ export function CityExperience() {
     }
   }, [audioOn]);
 
+  const toggleViewMode = useCallback(() => {
+    setViewMode((v) => (v === "follow" ? "pov" : "follow"));
+  }, []);
+
   // keep the rain sound layer in step with the visual weather
   useEffect(() => {
     if (audioOn) audio.current?.setRain(weather === "rain");
@@ -87,6 +92,8 @@ export function CityExperience() {
       weather,
       audioOn,
       toggleAudio,
+      viewMode,
+      toggleViewMode,
       selected,
       setSelected,
       panel,
@@ -96,7 +103,19 @@ export function CityExperience() {
       playerPos,
       moveCommand,
     }),
-    [night, toggleNight, weather, audioOn, toggleAudio, selected, setSelected, panel, setPanel]
+    [
+      night,
+      toggleNight,
+      weather,
+      audioOn,
+      toggleAudio,
+      viewMode,
+      toggleViewMode,
+      selected,
+      setSelected,
+      panel,
+      setPanel,
+    ]
   );
 
   return (

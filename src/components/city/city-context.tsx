@@ -7,6 +7,9 @@ export type PanelId = "about" | "contact" | "resume" | "nila" | "park" | null;
 
 export type Weather = "clear" | "rain";
 
+/** "follow": third-person chase camera. "pov": first-person from the rover. */
+export type ViewMode = "follow" | "pov";
+
 export interface CityState {
   /** UI state */
   night: boolean;
@@ -14,6 +17,8 @@ export interface CityState {
   weather: Weather; // re-rolled on each transition to night; clear by day
   audioOn: boolean;
   toggleAudio: () => void;
+  viewMode: ViewMode;
+  toggleViewMode: () => void;
   selected: Project | null;
   setSelected: (p: Project | null) => void;
   panel: PanelId;
