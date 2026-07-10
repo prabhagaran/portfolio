@@ -1,12 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { Star, GitFork, ExternalLink } from "lucide-react";
 import { FaGithub } from "react-icons/fa6";
 import { Section } from "@/components/section";
 import { Reveal, Stagger, StaggerItem } from "@/components/motion";
 import { site } from "@/data/site";
-import { cn } from "@/lib/utils";
 
 interface Repo {
   id: number;
@@ -52,49 +48,61 @@ function timeAgo(iso: string) {
   return `${Math.floor(days / 365)}y ago`;
 }
 
-export function GitHub() {
-  const [repos, setRepos] = useState<Repo[] | null>(null);
-  const [days, setDays] = useState<ContributionDay[] | null>(null);
-  const [total, setTotal] = useState<number | null>(null);
-  const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetch(
+// Fetched server-side with hourly revalidation: no client rate-limit
+// exposure (60 req/hr unauthenticated) and no loading state to get stuck in.
+async function fetchRepos(): Promise<Repo[] | null> {
+  try {
+    const res = await fetch(
       `https://api.github.com/users/${site.github}/repos?sort=updated&per_page=6&type=owner`,
-      { signal: controller.signal, headers: { Accept: "application/vnd.github+json" } }
-    )
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data: Repo[]) => setRepos(data))
-      .catch(() => setFailed(true));
-
-    fetch(`https://github-contributions-api.jogruber.de/v4/${site.github}?y=last`, {
-      signal: controller.signal,
-    })
-      .then((r) => (r.ok ? r.json() : Promise.reject(r.status)))
-      .then((data: { total: Record<string, number>; contributions: ContributionDay[] }) => {
-        setDays(data.contributions.slice(-364));
-        setTotal(Object.values(data.total).reduce((a, b) => a + b, 0));
-      })
-      .catch(() => {
-        /* graph simply not shown */
-      });
-
-    return () => controller.abort();
-  }, []);
-
-  const weeks: ContributionDay[][] = [];
-  if (days) {
-    for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+      {
+        headers: { Accept: "application/vnd.github+json" },
+        next: { revalidate: 3600 },
+      }
+    );
+    if (!res.ok) return null;
+    const data: Repo[] = await res.json();
+    return data.length > 0 ? data : null;
+  } catch {
+    return null;
   }
+}
+
+async function fetchContributions(): Promise<{
+  weeks: ContributionDay[][];
+  total: number;
+} | null> {
+  try {
+    const res = await fetch(
+      `https://github-contributions-api.jogruber.de/v4/${site.github}?y=last`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return null;
+    const data: { total: Record<string, number>; contributions: ContributionDay[] } =
+      await res.json();
+    const days = data.contributions.slice(-364);
+    const weeks: ContributionDay[][] = [];
+    for (let i = 0; i < days.length; i += 7) weeks.push(days.slice(i, i + 7));
+    return {
+      weeks,
+      total: Object.values(data.total).reduce((a, b) => a + b, 0),
+    };
+  } catch {
+    return null;
+  }
+}
+
+export async function GitHub() {
+  const [repos, contributions] = await Promise.all([
+    fetchRepos(),
+    fetchContributions(),
+  ]);
 
   return (
     <Section
       id="github"
       eyebrow="05 · GitHub"
       title="Open source activity"
-      description="Live from the GitHub API — repositories, languages, and contribution history."
+      description="Repositories, languages, and contribution history — refreshed hourly from the GitHub API."
     >
       <Reveal>
         <div className="flex flex-wrap items-center justify-between gap-4 rounded-card border border-line bg-surface p-5 shadow-card">
@@ -103,8 +111,8 @@ export function GitHub() {
             <div>
               <p className="font-mono text-sm text-slate-100">@{site.github}</p>
               <p className="text-sm text-muted">
-                {total !== null
-                  ? `${total.toLocaleString()} contributions in the last year`
+                {contributions
+                  ? `${contributions.total.toLocaleString()} contributions in the last year`
                   : "Hardware · Firmware · Battery tooling"}
               </p>
             </div>
@@ -121,12 +129,11 @@ export function GitHub() {
         </div>
       </Reveal>
 
-      {/* Contribution graph */}
-      {weeks.length > 0 && (
+      {contributions && contributions.weeks.length > 0 && (
         <Reveal className="mt-6">
           <div className="overflow-x-auto rounded-card border border-line bg-surface p-5 shadow-card">
             <div className="flex gap-[3px]" aria-label="GitHub contribution graph">
-              {weeks.map((week, wi) => (
+              {contributions.weeks.map((week, wi) => (
                 <div key={wi} className="flex flex-col gap-[3px]">
                   {week.map((d) => (
                     <div
@@ -142,7 +149,11 @@ export function GitHub() {
             <div className="mt-3 flex items-center gap-2 font-mono text-[10px] text-faint">
               <span>Less</span>
               {cellColor.map((c) => (
-                <span key={c} className="h-[10px] w-[10px] rounded-[2px]" style={{ background: c }} />
+                <span
+                  key={c}
+                  className="h-[10px] w-[10px] rounded-[2px]"
+                  style={{ background: c }}
+                />
               ))}
               <span>More</span>
             </div>
@@ -150,9 +161,8 @@ export function GitHub() {
         </Reveal>
       )}
 
-      {/* Repos */}
       <div className="mt-6">
-        {repos && repos.length > 0 ? (
+        {repos ? (
           <Stagger className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {repos.map((r) => (
               <StaggerItem key={r.id} className="h-full">
@@ -192,16 +202,16 @@ export function GitHub() {
             ))}
           </Stagger>
         ) : (
-          <div
-            className={cn(
-              "rounded-card border border-dashed border-line p-8 text-center text-sm text-muted",
-              !failed && repos === null && "animate-pulse"
-            )}
-          >
-            {failed
-              ? "Couldn't reach the GitHub API right now — visit the profile directly instead."
-              : "Loading repositories…"}
-          </div>
+          <Reveal>
+            <a
+              href={`${site.githubUrl}?tab=repositories`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-card border border-dashed border-line p-8 text-center text-sm text-muted transition-colors duration-200 hover:border-line-strong hover:text-slate-200"
+            >
+              Browse all repositories on GitHub →
+            </a>
+          </Reveal>
         )}
       </div>
     </Section>

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Navbar } from "@/components/navbar";
-import { Footer } from "@/components/footer";
+import { ChromeNavbar, ChromeFooter } from "@/components/chrome";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -46,11 +45,11 @@ export default function RootLayout({
         >
           Skip to content
         </a>
-        <Navbar />
+        <ChromeNavbar />
         <div id="main" className="flex-1">
           {children}
         </div>
-        <Footer />
+        <ChromeFooter />
       </body>
     </html>
   );

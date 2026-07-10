@@ -1,62 +1,95 @@
+export interface SkillEvidence {
+  label: string;
+  href: string;
+}
+
 export interface Skill {
   name: string;
-  level: number; // 0–100
   description: string;
+  /** Projects/articles that demonstrate this skill — no self-assigned scores. */
+  evidence: SkillEvidence[];
 }
 
 export const skills: Skill[] = [
   {
     name: "Hardware Design",
-    level: 92,
     description:
       "Mixed-signal board design from concept to production — power stages, sensing chains, protection circuits.",
+    evidence: [
+      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
+      { label: "Cell Monitoring Board", href: "https://github.com/prabhagaran/cell-monitor-board" },
+    ],
   },
   {
     name: "PCB Design",
-    level: 90,
     description:
       "Multi-layer layouts with controlled impedance, creepage/clearance for HV, EMC-driven stackups and routing.",
+    evidence: [
+      { label: "Cell Monitoring Board", href: "https://github.com/prabhagaran/cell-monitor-board" },
+      { label: "HV creepage article", href: "/blog/hv-pcb-creepage" },
+    ],
   },
   {
     name: "Embedded Systems",
-    level: 88,
     description:
       "Bare-metal and RTOS firmware on ARM Cortex-M — drivers, bootloaders, fault handlers, OTA pipelines.",
+    evidence: [
+      { label: "Fault handling article", href: "/blog/firmware-fault-handling" },
+      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
+    ],
   },
   {
     name: "Battery Management",
-    level: 90,
     description:
       "Cell monitoring AFEs, balancing strategies, SoC/SoH estimation, and safety architectures for Li-ion packs.",
+    evidence: [
+      { label: "Battery Digital Twin", href: "https://github.com/prabhagaran/battery-digital-twin" },
+      { label: "Cell balancing article", href: "/blog/cell-balancing-strategies" },
+      { label: "SoC estimation article", href: "/blog/soc-estimation-kalman" },
+    ],
   },
   {
     name: "Power Electronics",
-    level: 78,
     description:
       "DC-DC converters, gate-drive design, precharge circuits, and contactor control for high-voltage systems.",
+    evidence: [
+      { label: "Precharge design article", href: "/blog/precharge-circuit-design" },
+    ],
   },
   {
     name: "System Architecture",
-    level: 82,
     description:
       "Partitioning cell-to-cloud systems: bus topologies, redundancy, isolation boundaries, failure domains.",
+    evidence: [
+      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
+      { label: "Battery Testing Dashboard", href: "https://github.com/prabhagaran/battery-testing-dashboard" },
+    ],
   },
   {
     name: "Debugging",
-    level: 94,
     description:
       "Oscilloscope, logic analyzer, thermal camera, CAN sniffer — root-causing issues across HW/FW boundaries.",
+    evidence: [
+      { label: "CAN debugging field guide", href: "/blog/can-bus-debugging" },
+      { label: "CAN Data Analyzer", href: "https://github.com/prabhagaran/can-data-analyzer" },
+    ],
   },
   {
     name: "Python Automation",
-    level: 80,
     description:
       "Test-bench automation, HIL scripts, data pipelines, and report generation for validation campaigns.",
+    evidence: [
+      { label: "CAN Data Analyzer", href: "https://github.com/prabhagaran/can-data-analyzer" },
+      { label: "Battery Testing Dashboard", href: "https://github.com/prabhagaran/battery-testing-dashboard" },
+    ],
   },
   {
     name: "Documentation",
-    level: 85,
     description:
       "Design review packages, test reports, interface control documents, and maintainable engineering wikis.",
+    evidence: [
+      { label: "Technical articles", href: "/#blog" },
+      { label: "Open Source Incubator", href: "https://github.com/prabhagaran/open-source-incubator" },
+    ],
   },
 ];

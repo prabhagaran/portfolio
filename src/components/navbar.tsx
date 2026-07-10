@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Menu, X, CircuitBoard } from "lucide-react";
+import { Menu, X, CircuitBoard, Boxes } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { site } from "@/data/site";
+import { setStoredMode } from "@/lib/mode";
 
 const links = [
   { href: "/#about", label: "About" },
@@ -72,6 +73,16 @@ export function Navbar() {
               Resume
             </a>
           </li>
+          <li>
+            <Link
+              href="/city"
+              onClick={() => setStoredMode("city")}
+              className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-emerald/40 bg-emerald-soft px-4 text-sm font-medium text-emerald-300 transition-colors duration-200 hover:border-emerald/70 hover:text-emerald-200"
+            >
+              <Boxes className="h-4 w-4" aria-hidden="true" />
+              3D City
+            </Link>
+          </li>
         </ul>
 
         <button
@@ -107,6 +118,18 @@ export function Navbar() {
               >
                 Download Resume
               </a>
+            </li>
+            <li>
+              <Link
+                href="/city"
+                onClick={() => {
+                  setStoredMode("city");
+                  setOpen(false);
+                }}
+                className="block rounded-md px-3 py-2.5 text-sm font-medium text-emerald-300 hover:bg-surface-2"
+              >
+                Explore Electronic City (3D)
+              </Link>
             </li>
           </ul>
         </div>

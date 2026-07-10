@@ -8,9 +8,12 @@ import { stats, philosophy, careerTimeline } from "@/data/site";
 
 function CountUp({ value, suffix }: { value: number; suffix: string }) {
   const ref = useRef<HTMLSpanElement>(null);
-  const inView = useInView(ref, { once: true, margin: "-40px" });
+  const inView = useInView(ref, { once: true, amount: 0.5 });
   const reduce = useReducedMotion();
-  const [display, setDisplay] = useState(0);
+  // Progressive enhancement: server HTML carries the real value, so the
+  // stat is correct even if JS never runs. The count-up only replaces it
+  // once the element is in view on a motion-friendly client.
+  const [display, setDisplay] = useState(value);
 
   useEffect(() => {
     if (!inView || reduce) return;
@@ -29,7 +32,7 @@ function CountUp({ value, suffix }: { value: number; suffix: string }) {
 
   return (
     <span ref={ref} className="tabular-nums">
-      {reduce ? value : display}
+      {display}
       {suffix}
     </span>
   );

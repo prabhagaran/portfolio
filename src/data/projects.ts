@@ -22,7 +22,7 @@ export const projects: Project[] = [
     tags: ["Python", "ECM Modeling", "MQTT", "TimescaleDB", "Grafana"],
     status: "Active",
     github: "https://github.com/prabhagaran/battery-digital-twin",
-    docs: "#",
+    docs: "/blog/soc-estimation-kalman",
     visual: "twin",
   },
   {
@@ -33,7 +33,7 @@ export const projects: Project[] = [
     tags: ["STM32", "CAN-FD", "Altium", "Isolated ADC", "IEC 61508"],
     status: "Production",
     github: "https://github.com/prabhagaran/battery-rack-monitor",
-    docs: "#",
+    docs: "/blog/hv-pcb-creepage",
     visual: "rack",
   },
   {
@@ -44,7 +44,7 @@ export const projects: Project[] = [
     tags: ["Altium", "AFE", "isoSPI", "Passive Balancing", "4-layer PCB"],
     status: "Production",
     github: "https://github.com/prabhagaran/cell-monitor-board",
-    docs: "#",
+    docs: "/blog/cell-balancing-strategies",
     visual: "cell",
   },
   {
@@ -55,7 +55,6 @@ export const projects: Project[] = [
     tags: ["TypeScript", "Next.js", "React", "Engineering Tools"],
     status: "Open Source",
     github: "https://github.com/prabhagaran/battery-pack-calculator",
-    demo: "#",
     visual: "calculator",
   },
   {
@@ -66,7 +65,6 @@ export const projects: Project[] = [
     tags: ["KiCad", "GitHub Actions", "Firmware Templates", "Docs"],
     status: "Open Source",
     github: "https://github.com/prabhagaran/open-source-incubator",
-    docs: "#",
     visual: "incubator",
   },
   {
@@ -77,7 +75,7 @@ export const projects: Project[] = [
     tags: ["Python", "DBC", "CAN-FD", "Signal Processing"],
     status: "Active",
     github: "https://github.com/prabhagaran/can-data-analyzer",
-    demo: "#",
+    docs: "/blog/can-bus-debugging",
     visual: "can",
   },
   {
@@ -88,7 +86,6 @@ export const projects: Project[] = [
     tags: ["Node.js", "Fastify", "PostgreSQL", "Redis", "Grafana"],
     status: "Prototype",
     github: "https://github.com/prabhagaran/battery-testing-dashboard",
-    docs: "#",
     visual: "dashboard",
   },
 ];

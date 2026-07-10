@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { ModeGate } from "@/components/mode-gate";
 import { Hero } from "@/components/sections/hero";
 import { About } from "@/components/sections/about";
 import { Projects } from "@/components/sections/projects";
@@ -16,6 +18,9 @@ export default function Home() {
 
   return (
     <main>
+      <Suspense fallback={null}>
+        <ModeGate />
+      </Suspense>
       <Hero />
       <About />
       <div className="border-t border-line">
