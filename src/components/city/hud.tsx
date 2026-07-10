@@ -1,35 +1,48 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   ArrowLeft,
   ArrowUpRight,
   BookText,
+  ChevronDown,
+  Compass,
   Download,
   Eye,
+  Home,
+  List,
   Mail,
   MapPin,
   Moon,
+  PlaneTakeoff,
+  RotateCw,
+  Route,
+  Satellite,
   Sun,
-  Video,
   Volume2,
   VolumeX,
   X,
+  type LucideIcon,
 } from "lucide-react";
 import { FaGithub, FaLinkedin } from "react-icons/fa6";
 import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
 import { setStoredMode } from "@/lib/mode";
 import { site, stats } from "@/data/site";
+import { skills } from "@/data/skills";
 import type { ProjectStatus } from "@/data/projects";
 import { LEVEL_COLORS } from "./github-data";
 import { useCity } from "./city-context";
+import type { ViewMode } from "./city-context";
 import {
   buildings,
   kiosks,
+  type KioskDef,
   EXTENT,
   GITHUB_BUILDING,
+  INNOVATION_DISTRICT_LABEL,
   NILA_POS,
   PARK_POS,
   STREET_HALF,
@@ -291,6 +304,75 @@ function GithubPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+function DirectoryPanel({ onClose }: { onClose: () => void }) {
+  const { setSelected, setPanel, moveCommand } = useCity();
+
+  const rowClass =
+    "flex w-full items-center justify-between gap-3 rounded-card border border-line bg-surface-2 px-3.5 py-2.5 text-left text-sm text-slate-200 transition-colors duration-200 hover:border-line-strong hover:text-white";
+
+  function goProject(slug: string) {
+    const b = buildings.find((x) => x.project.slug === slug);
+    if (!b) return;
+    moveCommand.current = b.doorstep;
+    setSelected(b.project);
+  }
+  function goKiosk(id: KioskDef["id"]) {
+    const k = kiosks.find((x) => x.id === id);
+    if (!k) return;
+    moveCommand.current = k.position;
+    setPanel(id);
+  }
+  function goGithub() {
+    moveCommand.current = GITHUB_BUILDING.doorstep;
+    setPanel("github");
+  }
+
+  return (
+    <Panel title="Directory" onClose={onClose}>
+      <p className="text-sm leading-relaxed text-muted">
+        Every destination in the city — pick one and the rover drives there.
+      </p>
+      <div className="mt-5 space-y-5">
+        <div>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-faint">
+            {INNOVATION_DISTRICT_LABEL}
+          </p>
+          <div className="space-y-1.5">
+            {buildings.map((b) => (
+              <button
+                key={b.project.slug}
+                type="button"
+                onClick={() => goProject(b.project.slug)}
+                className={rowClass}
+              >
+                {b.project.name}
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden="true" />
+              </button>
+            ))}
+            <button type="button" onClick={goGithub} className={rowClass}>
+              GitHub Data Tower
+              <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden="true" />
+            </button>
+          </div>
+        </div>
+        <div>
+          <p className="mb-2 font-mono text-[11px] uppercase tracking-[0.15em] text-faint">
+            Destinations
+          </p>
+          <div className="space-y-1.5">
+            {kiosks.map((k) => (
+              <button key={k.id} type="button" onClick={() => goKiosk(k.id)} className={rowClass}>
+                {k.label}
+                <ArrowUpRight className="h-3.5 w-3.5 shrink-0 text-faint" aria-hidden="true" />
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </Panel>
+  );
+}
+
 function InfoPanels() {
   const { panel, setPanel } = useCity();
   const close = () => setPanel(null);
@@ -322,7 +404,7 @@ function InfoPanels() {
         </Panel>
       )}
       {panel === "contact" && (
-        <Panel title="Contact" onClose={close}>
+        <Panel title="Communication Hub" onClose={close}>
           <div className="space-y-3">
             <a
               href={`mailto:${site.email}`}
@@ -353,7 +435,7 @@ function InfoPanels() {
         </Panel>
       )}
       {panel === "resume" && (
-        <Panel title="Resume" onClose={close}>
+        <Panel title="Documentation Center" onClose={close}>
           <p className="text-sm leading-relaxed text-muted">
             {site.role} — {site.keywords.slice(0, 4).join(", ")}.
           </p>
@@ -366,7 +448,44 @@ function InfoPanels() {
           </a>
         </Panel>
       )}
+      {panel === "skills" && (
+        <Panel title="Tech District" onClose={close}>
+          <p className="text-sm leading-relaxed text-muted">
+            Competencies, each linked to the project or article that
+            demonstrates it — no self-assigned scores.
+          </p>
+          <div className="mt-4 space-y-3">
+            {skills.map((s) => (
+              <div key={s.name} className="rounded-card border border-line bg-surface-2 p-3">
+                <p className="text-sm font-medium text-slate-100">{s.name}</p>
+                <p className="mt-1 text-xs leading-relaxed text-muted">{s.description}</p>
+                <ul className="mt-2 flex flex-wrap gap-1.5">
+                  {s.evidence.map((e) => {
+                    const external = e.href.startsWith("http");
+                    const linkClass =
+                      "inline-flex items-center gap-1 rounded-full border border-accent/30 bg-accent-soft px-2 py-0.5 font-mono text-[10px] text-blue-300 transition-colors duration-200 hover:border-accent/60";
+                    return (
+                      <li key={e.href + e.label}>
+                        {external ? (
+                          <a href={e.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                            {e.label}
+                          </a>
+                        ) : (
+                          <Link href={e.href} className={linkClass}>
+                            {e.label}
+                          </Link>
+                        )}
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
       {panel === "github" && <GithubPanel onClose={close} />}
+      {panel === "directory" && <DirectoryPanel onClose={close} />}
       {panel === "park" && (
         <Panel title="Off the clock" onClose={close}>
           <p className="text-sm leading-relaxed text-muted">
@@ -411,11 +530,21 @@ function InfoPanels() {
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
-              Press V or the eye icon to swap the follow camera for first-person.
+              Press V, or open the camera menu, for Navigate, Street View,
+              Orbit (drag to spin), Drone View, or Satellite View.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
-              The plaza kiosks cover About, Contact, and Resume.
+              The Directory (list icon) jumps straight to any destination.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              Try Guided Tour (route icon) for a hands-free flythrough.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              The plaza kiosks cover About, Communication Hub, Documentation
+              Center, and Tech District.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
@@ -464,6 +593,115 @@ function PerfPrompt({ show, onDismiss }: { show: boolean; onDismiss: () => void 
   );
 }
 
+/* ---------------- camera mode menu ---------------- */
+
+const CAMERA_MODES: { id: ViewMode; label: string; icon: LucideIcon }[] = [
+  { id: "follow", label: "Navigate", icon: Compass },
+  { id: "pov", label: "Street View", icon: Eye },
+  { id: "orbit", label: "Orbit", icon: RotateCw },
+  { id: "drone", label: "Drone View", icon: PlaneTakeoff },
+  { id: "satellite", label: "Satellite View", icon: Satellite },
+];
+
+function CameraMenu() {
+  const { viewMode, setViewMode, resetCamera } = useCity();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDoc = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    window.addEventListener("mousedown", onDoc);
+    return () => window.removeEventListener("mousedown", onDoc);
+  }, [open]);
+
+  const current = CAMERA_MODES.find((m) => m.id === viewMode) ?? CAMERA_MODES[0];
+  const CurrentIcon = current.icon;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        title="Camera mode (V toggles Navigate / Street View)"
+        className="pointer-events-auto inline-flex h-9 items-center gap-2 rounded-[10px] border border-line bg-surface/90 px-3 text-sm text-slate-200 shadow-card backdrop-blur-sm transition-colors duration-200 hover:border-accent/60"
+      >
+        <CurrentIcon className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+        <span className="hidden sm:inline">{current.label}</span>
+        <ChevronDown className="h-3.5 w-3.5 text-faint" aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          aria-label="Camera mode"
+          className="pointer-events-auto absolute right-0 top-11 w-56 overflow-hidden rounded-[10px] border border-line bg-surface/95 py-1.5 shadow-card-hover backdrop-blur-md"
+        >
+          {CAMERA_MODES.map((m) => (
+            <button
+              key={m.id}
+              role="menuitemradio"
+              aria-checked={viewMode === m.id}
+              type="button"
+              onClick={() => {
+                setViewMode(m.id);
+                setOpen(false);
+              }}
+              className={cn(
+                "flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors duration-150",
+                viewMode === m.id
+                  ? "bg-accent-soft text-blue-300"
+                  : "text-slate-200 hover:bg-surface-2"
+              )}
+            >
+              <m.icon className="h-4 w-4" aria-hidden="true" />
+              {m.label}
+            </button>
+          ))}
+          <div className="my-1 border-t border-line" />
+          <button
+            type="button"
+            onClick={() => {
+              resetCamera();
+              setOpen(false);
+            }}
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-slate-200 transition-colors duration-150 hover:bg-surface-2"
+          >
+            <Home className="h-4 w-4 text-amber-300" aria-hidden="true" />
+            Return to Base
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- guided tour banner ---------------- */
+
+function TourBanner() {
+  const { viewMode, setViewMode, tourStopName } = useCity();
+  if (viewMode !== "tour" || !tourStopName) return null;
+  return (
+    <div className="pointer-events-auto absolute left-1/2 top-4 z-30 flex -translate-x-1/2 items-center gap-3 whitespace-nowrap rounded-full border border-line bg-surface/90 px-4 py-2 text-sm text-slate-100 shadow-card backdrop-blur-sm">
+      <Route className="h-4 w-4 text-emerald-300" aria-hidden="true" />
+      <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-faint">
+        Guided Tour
+      </span>
+      <span className="font-medium">{tourStopName}</span>
+      <button
+        type="button"
+        onClick={() => setViewMode("follow")}
+        className="ml-1 rounded-full border border-line px-2.5 py-0.5 text-xs text-muted transition-colors duration-200 hover:text-slate-100"
+      >
+        Stop
+      </button>
+    </div>
+  );
+}
+
 /* ---------------- HUD root ---------------- */
 
 export function CityHud({
@@ -473,11 +711,12 @@ export function CityHud({
   perfWarn: boolean;
   onDismissPerf: () => void;
 }) {
-  const { night, toggleNight, audioOn, toggleAudio, viewMode, toggleViewMode } = useCity();
+  const { night, toggleNight, audioOn, toggleAudio, viewMode, setViewMode, setPanel } =
+    useCity();
 
   return (
     <div className="pointer-events-none fixed inset-0 z-20">
-      {/* top bar: skip link (always, one click) + view/audio/day-night */}
+      {/* top bar: skip link (always, one click) + navigation + audio/day-night */}
       <div className="flex items-start justify-between p-4">
         <Link
           href="/?mode=classic"
@@ -490,20 +729,27 @@ export function CityHud({
         <div className="flex items-center gap-2">
           <button
             type="button"
-            onClick={toggleViewMode}
-            aria-label={
-              viewMode === "pov" ? "Switch to follow camera" : "Switch to first-person view"
-            }
-            aria-pressed={viewMode === "pov"}
-            title={viewMode === "pov" ? "Follow camera (V)" : "First-person view (V)"}
+            onClick={() => setPanel("directory")}
+            aria-label="Open directory"
+            title="Directory"
             className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-surface/90 text-slate-200 shadow-card backdrop-blur-sm transition-colors duration-200 hover:border-accent/60"
           >
-            {viewMode === "pov" ? (
-              <Video className="h-4 w-4 text-blue-300" aria-hidden="true" />
-            ) : (
-              <Eye className="h-4 w-4 text-emerald-300" aria-hidden="true" />
-            )}
+            <List className="h-4 w-4" aria-hidden="true" />
           </button>
+          <button
+            type="button"
+            onClick={() => setViewMode(viewMode === "tour" ? "follow" : "tour")}
+            aria-label={viewMode === "tour" ? "Stop guided tour" : "Start guided tour"}
+            aria-pressed={viewMode === "tour"}
+            title="Guided Tour"
+            className="pointer-events-auto inline-flex h-9 w-9 items-center justify-center rounded-[10px] border border-line bg-surface/90 text-slate-200 shadow-card backdrop-blur-sm transition-colors duration-200 hover:border-accent/60"
+          >
+            <Route
+              className={cn("h-4 w-4", viewMode === "tour" ? "text-emerald-300" : "text-slate-300")}
+              aria-hidden="true"
+            />
+          </button>
+          <CameraMenu />
           <button
             type="button"
             onClick={toggleAudio}
@@ -533,10 +779,12 @@ export function CityHud({
         </div>
       </div>
 
+      <TourBanner />
+
       {/* bottom-left hint / bottom-right minimap */}
-      <div className="absolute bottom-4 left-4 hidden max-w-[260px] space-y-1 rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
+      <div className="absolute bottom-4 left-4 hidden max-w-[280px] space-y-1 rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
         <p>Click the street to move · or drive it like a car (WASD/arrows)</p>
-        <p>Scroll to zoom · V or the eye icon switches POV</p>
+        <p>Scroll to zoom/altitude · drag to Orbit · V toggles Street View</p>
       </div>
       <div className="absolute bottom-4 right-4">
         <Minimap />

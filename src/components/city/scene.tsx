@@ -111,7 +111,13 @@ function PerfMonitor({ onLowFps }: { onLowFps: () => void }) {
   return null;
 }
 
-export function CityScene({ onLowFps }: { onLowFps: () => void }) {
+export function CityScene({
+  onLowFps,
+  onTourStop,
+}: {
+  onLowFps: () => void;
+  onTourStop?: (name: string) => void;
+}) {
   return (
     <Canvas
       dpr={[1, 1.75]}
@@ -129,7 +135,7 @@ export function CityScene({ onLowFps }: { onLowFps: () => void }) {
       <GithubBuilding />
       <Park />
       <Nila />
-      <Player />
+      <Player onTourStop={onTourStop} />
       <Rain />
       <PerfMonitor onLowFps={onLowFps} />
     </Canvas>

@@ -28,11 +28,13 @@ export function CityExperience() {
     initialNight ? rollWeather() : "clear"
   );
   const [audioOn, setAudioOn] = useState(false); // default off per spec
-  const [viewMode, setViewMode] = useState<ViewMode>("follow");
+  const [viewMode, setViewModeState] = useState<ViewMode>("follow");
+  const [resetTick, setResetTick] = useState(0);
   const [selected, setSelectedState] = useState<Project | null>(null);
   const [panel, setPanelState] = useState<PanelId>(null);
   const [perfWarn, setPerfWarn] = useState(false);
   const [githubData, setGithubData] = useState<ContribData | null>(null);
+  const [tourStopName, setTourStopName] = useState<string | null>(null);
 
   const nightT = useRef(night ? 1 : 0);
   const rainT = useRef(0);
@@ -61,9 +63,23 @@ export function CityExperience() {
     }
   }, [audioOn]);
 
-  const toggleViewMode = useCallback(() => {
-    setViewMode((v) => (v === "follow" ? "pov" : "follow"));
+  // Clearing tourStopName whenever the mode isn't "tour" lives here,
+  // at every call site that can change viewMode, rather than in a
+  // separate effect — keeps it a plain state update, not a cascade.
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode);
+    if (mode !== "tour") setTourStopName(null);
   }, []);
+
+  // "Return to Base": back to the follow camera, and bump resetTick so
+  // Player clears its zoom/orbit/drone offsets back to defaults
+  const resetCamera = useCallback(() => {
+    setViewModeState("follow");
+    setTourStopName(null);
+    setResetTick((t) => t + 1);
+  }, []);
+
+  const handleTourStop = useCallback((name: string) => setTourStopName(name), []);
 
   // keep the rain sound layer in step with the visual weather
   useEffect(() => {
@@ -97,6 +113,13 @@ export function CityExperience() {
   const setPanel = useCallback((p: PanelId) => {
     setPanelState(p);
     if (p) setSelectedState(null);
+    // Kiosk/tower destinations drive the rover there via moveCommand —
+    // switch back to the follow camera so that travel is visible,
+    // unless it's the Directory menu itself (no world location).
+    if (p && p !== "directory") {
+      setViewModeState("follow");
+      setTourStopName(null);
+    }
   }, []);
 
   const ctx = useMemo(
@@ -107,11 +130,14 @@ export function CityExperience() {
       audioOn,
       toggleAudio,
       viewMode,
-      toggleViewMode,
+      setViewMode,
+      resetTick,
+      resetCamera,
       selected,
       setSelected,
       panel,
       setPanel,
+      tourStopName,
       githubData,
       nightT,
       rainT,
@@ -125,11 +151,14 @@ export function CityExperience() {
       audioOn,
       toggleAudio,
       viewMode,
-      toggleViewMode,
+      setViewMode,
+      resetTick,
+      resetCamera,
       selected,
       setSelected,
       panel,
       setPanel,
+      tourStopName,
       githubData,
     ]
   );
@@ -137,7 +166,7 @@ export function CityExperience() {
   return (
     <CityContext.Provider value={ctx}>
       <div className="fixed inset-0 bg-background">
-        <CityScene onLowFps={() => setPerfWarn(true)} />
+        <CityScene onLowFps={() => setPerfWarn(true)} onTourStop={handleTourStop} />
         <CityHud perfWarn={perfWarn} onDismissPerf={() => setPerfWarn(false)} />
       </div>
     </CityContext.Provider>

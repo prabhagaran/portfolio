@@ -4,12 +4,29 @@ import { createContext, useContext, type MutableRefObject } from "react";
 import type { Project } from "@/data/projects";
 import type { ContribData } from "./github-data";
 
-export type PanelId = "about" | "contact" | "resume" | "nila" | "park" | "github" | null;
+export type PanelId =
+  | "about"
+  | "contact"
+  | "resume"
+  | "skills"
+  | "nila"
+  | "park"
+  | "github"
+  | "directory"
+  | null;
 
 export type Weather = "clear" | "rain";
 
-/** "follow": third-person chase camera. "pov": first-person from the rover. */
-export type ViewMode = "follow" | "pov";
+/**
+ * Camera / navigation modes:
+ * - follow:    Navigate — third-person chase camera, drives the rover
+ * - pov:       Street View — first-person from the rover
+ * - orbit:     Orbit — camera circles the (still-drivable) rover, drag to spin
+ * - drone:     Drone View — free-fly camera, decoupled from the rover
+ * - satellite: Satellite View — locked top-down overview, pannable
+ * - tour:      Guided Tour — automated flythrough of every landmark
+ */
+export type ViewMode = "follow" | "pov" | "orbit" | "drone" | "satellite" | "tour";
 
 export interface CityState {
   /** UI state */
@@ -19,11 +36,16 @@ export interface CityState {
   audioOn: boolean;
   toggleAudio: () => void;
   viewMode: ViewMode;
-  toggleViewMode: () => void;
+  setViewMode: (mode: ViewMode) => void;
+  /** Bumps on every "Return to Base" — Player watches this to reset zoom/orbit/drone state */
+  resetTick: number;
+  resetCamera: () => void;
   selected: Project | null;
   setSelected: (p: Project | null) => void;
   panel: PanelId;
   setPanel: (p: PanelId) => void;
+  /** Name of the current Guided Tour stop; null when not touring */
+  tourStopName: string | null;
   /** Real contribution history for the GitHub data tower; null while loading/unavailable */
   githubData: ContribData | null;
 

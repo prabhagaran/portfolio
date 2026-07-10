@@ -4,7 +4,15 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { useFrame, useThree } from "@react-three/fiber";
 import { useCity } from "./city-context";
-import { buildings, buildPath, isWalkable, SPAWN } from "./layout-data";
+import {
+  buildings,
+  buildPath,
+  isWalkable,
+  kiosks,
+  GITHUB_BUILDING,
+  EXTENT,
+  SPAWN,
+} from "./layout-data";
 
 const SPEED = 9; // units/sec — waypoint (mouse) travel speed
 const FORWARD_SPEED = 9; // units/sec — keyboard throttle forward
@@ -16,8 +24,31 @@ const ZOOM_MAX = 2.2; // farthest — wide view of the block
 const ZOOM_SPEED = 0.0016;
 const EYE_HEIGHT = 1.35;
 
+// Orbit
+const ORBIT_RADIUS = Math.hypot(CAM_OFFSET.x, CAM_OFFSET.z);
+const DEFAULT_ORBIT_YAW = Math.atan2(CAM_OFFSET.x, CAM_OFFSET.z);
+const ORBIT_DRAG_SPEED = 0.006;
+
+// Drone
+const DRONE_SPEED = 14;
+const DRONE_ALT_MIN = 4;
+const DRONE_ALT_MAX = 60;
+const DRONE_ALT_SPEED = 0.02;
+
+// Satellite
+const SAT_PAN_SPEED = 20;
+const SAT_ALT_MIN = 20;
+const SAT_ALT_MAX = 90;
+const SAT_ALT_SPEED = 0.05;
+const SAT_DEFAULT_ALT = 55;
+
+// Guided tour
+const TOUR_DWELL = 4.5; // seconds per stop
+
 // Car-style controls: up/down throttle forward/reverse along the
-// current heading, left/right steer — nothing snaps sideways.
+// current heading, left/right steer — nothing snaps sideways. In
+// Drone View the same four keys fly the camera instead of the rover;
+// in Satellite View they pan the top-down view.
 const KEY_MAP: Record<string, "forward" | "reverse" | "left" | "right"> = {
   ArrowUp: "forward",
   w: "forward",
@@ -33,15 +64,52 @@ const KEY_MAP: Record<string, "forward" | "reverse" | "left" | "right"> = {
   D: "right",
 };
 
+interface TourStop {
+  camPos: THREE.Vector3;
+  look: THREE.Vector3;
+  name: string;
+}
+
+function buildingShot(
+  position: [number, number],
+  doorstep: [number, number],
+  size: [number, number, number],
+  dist: number,
+  camY: number
+) {
+  const center = new THREE.Vector3(position[0], size[1] * 0.35, position[1]);
+  const door = new THREE.Vector3(doorstep[0], 0, doorstep[1]);
+  const out = door.clone().sub(new THREE.Vector3(position[0], 0, position[1]));
+  out.y = 0;
+  out.normalize();
+  const camPos = door.clone().add(out.clone().multiplyScalar(dist));
+  camPos.y = camY;
+  return { camPos, center };
+}
+
 /**
- * Click-to-move rover + keyboard-driven rover, with a follow or
- * first-person (POV) camera. Consumes moveCommand from context each
- * frame for mouse/tap targets; arrow keys / WASD drive directly and
- * take priority while held. When a project is selected the camera
- * glides to that building's doorstep view regardless of view mode.
+ * Rover + camera rig for Electronic City. Supports six navigation
+ * modes (Navigate, Street View, Orbit, Drone View, Satellite View,
+ * Guided Tour) plus Return to Base. Mouse clicks always drive the
+ * rover via waypoints; arrow keys/WASD drive the rover in Navigate,
+ * Street View and Orbit, or fly free in Drone/pan in Satellite.
+ * Selecting a project always shows its doorstep view, regardless of
+ * the active camera mode.
  */
-export function Player() {
-  const { moveCommand, playerPos, selected, panel, viewMode, toggleViewMode } = useCity();
+export function Player({
+  onTourStop,
+}: {
+  onTourStop?: (name: string) => void;
+}) {
+  const {
+    moveCommand,
+    playerPos,
+    selected,
+    panel,
+    viewMode,
+    setViewMode,
+    resetTick,
+  } = useCity();
   const group = useRef<THREE.Group>(null);
   const wheels = useRef<THREE.Group>(null);
   const marker = useRef<THREE.Mesh>(null);
@@ -54,6 +122,14 @@ export function Player() {
     camLook: new THREE.Vector3(SPAWN[0], 1, SPAWN[1]),
     markerT: 0,
     zoom: 1,
+    orbitYaw: DEFAULT_ORBIT_YAW,
+    dronePos: new THREE.Vector3(SPAWN[0] + CAM_OFFSET.x, CAM_OFFSET.y, SPAWN[1] + CAM_OFFSET.z),
+    droneYaw: Math.PI,
+    droneAlt: 12,
+    satPos: new THREE.Vector3(SPAWN[0], 0, SPAWN[1]),
+    satAlt: SAT_DEFAULT_ALT,
+    tourIndex: 0,
+    tourT: 0,
   });
 
   // keyboard state — refs so held keys don't trigger re-renders
@@ -66,15 +142,77 @@ export function Player() {
     }
   }, [selected, panel]);
 
+  const viewModeRef = useRef(viewMode);
+  useEffect(() => {
+    viewModeRef.current = viewMode;
+  }, [viewMode]);
+
+  const tourStops: TourStop[] = useMemo(() => {
+    const stops: TourStop[] = [];
+    for (const b of buildings) {
+      const shot = buildingShot(b.position, b.doorstep, b.size, 11, 7.5);
+      stops.push({ camPos: shot.camPos, look: shot.center, name: b.project.name });
+    }
+    const gh = buildingShot(
+      GITHUB_BUILDING.position,
+      GITHUB_BUILDING.doorstep,
+      GITHUB_BUILDING.size,
+      13,
+      9
+    );
+    stops.push({ camPos: gh.camPos, look: gh.center, name: "GitHub Data Tower" });
+    for (const k of kiosks) {
+      const p = new THREE.Vector3(k.position[0], 0, k.position[1]);
+      stops.push({
+        camPos: p.clone().add(new THREE.Vector3(4, 4.5, 4)),
+        look: new THREE.Vector3(p.x, 1.2, p.z),
+        name: k.label,
+      });
+    }
+    return stops;
+  }, []);
+
+  // Entering a mode initializes its camera state from wherever the
+  // camera currently is, so switching modes never "teleports" jarringly.
+  useEffect(() => {
+    const s = state.current;
+    if (viewMode === "drone") {
+      s.dronePos.copy(s.camPos);
+      s.droneYaw = s.heading;
+      s.droneAlt = THREE.MathUtils.clamp(s.camPos.y, DRONE_ALT_MIN, DRONE_ALT_MAX);
+    } else if (viewMode === "satellite") {
+      s.satPos.set(s.pos.x, 0, s.pos.z);
+    } else if (viewMode === "tour") {
+      s.tourIndex = 0;
+      s.tourT = 0;
+      onTourStop?.(tourStops[0]?.name ?? "");
+    }
+  }, [viewMode, onTourStop, tourStops]);
+
+  // "Return to Base" — snap every mode-specific offset back to default
+  useEffect(() => {
+    const s = state.current;
+    s.zoom = 1;
+    s.orbitYaw = DEFAULT_ORBIT_YAW;
+    s.droneAlt = 12;
+    s.satAlt = SAT_DEFAULT_ALT;
+    s.tourIndex = 0;
+    s.tourT = 0;
+  }, [resetTick]);
+
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (!e.repeat && (e.key === "v" || e.key === "V")) {
-        toggleViewMode();
+        setViewMode(viewModeRef.current === "pov" ? "follow" : "pov");
         return;
       }
-      if (panelOpenRef.current) return;
       const dir = KEY_MAP[e.key];
       if (!dir) return;
+      // any drive input interrupts a guided tour
+      if (viewModeRef.current === "tour") {
+        setViewMode("follow");
+      }
+      if (panelOpenRef.current) return;
       keys.current[dir] = true;
       e.preventDefault();
     };
@@ -89,19 +227,64 @@ export function Player() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [toggleViewMode]);
+  }, [setViewMode]);
 
-  // scroll-wheel zoom: adjusts camera distance, clamped to a sane range
   const { gl } = useThree();
+
+  // scroll wheel: zoom (follow/orbit) or altitude (drone/satellite)
   useEffect(() => {
     const el = gl.domElement;
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const s = state.current;
-      s.zoom = THREE.MathUtils.clamp(s.zoom + e.deltaY * ZOOM_SPEED, ZOOM_MIN, ZOOM_MAX);
+      const vm = viewModeRef.current;
+      if (vm === "drone") {
+        s.droneAlt = THREE.MathUtils.clamp(
+          s.droneAlt - e.deltaY * DRONE_ALT_SPEED,
+          DRONE_ALT_MIN,
+          DRONE_ALT_MAX
+        );
+      } else if (vm === "satellite") {
+        s.satAlt = THREE.MathUtils.clamp(
+          s.satAlt - e.deltaY * SAT_ALT_SPEED,
+          SAT_ALT_MIN,
+          SAT_ALT_MAX
+        );
+      } else {
+        s.zoom = THREE.MathUtils.clamp(s.zoom + e.deltaY * ZOOM_SPEED, ZOOM_MIN, ZOOM_MAX);
+      }
     };
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
+  }, [gl]);
+
+  // drag-to-rotate, only acts while in Orbit mode
+  useEffect(() => {
+    const el = gl.domElement;
+    let dragging = false;
+    let lastX = 0;
+    const onDown = (e: PointerEvent) => {
+      if (viewModeRef.current !== "orbit") return;
+      dragging = true;
+      lastX = e.clientX;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!dragging) return;
+      const dx = e.clientX - lastX;
+      lastX = e.clientX;
+      state.current.orbitYaw -= dx * ORBIT_DRAG_SPEED;
+    };
+    const onUp = () => {
+      dragging = false;
+    };
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
   }, [gl]);
 
   const focusView = useMemo(() => {
@@ -120,9 +303,14 @@ export function Player() {
     const delta = Math.min(rawDelta, 0.1);
     const s = state.current;
 
+    // a click/tap always means "go here" — breaks a running tour
+    if (moveCommand.current && viewMode === "tour") {
+      setViewMode("follow");
+    }
+
+    const roverDrivable = viewMode === "follow" || viewMode === "pov" || viewMode === "orbit";
     const k = keys.current;
-    const manualActive =
-      !panelOpenRef.current && (k.forward || k.reverse || k.left || k.right);
+    const manualActive = !panelOpenRef.current && roverDrivable && (k.forward || k.reverse || k.left || k.right);
 
     let moving = false;
 
@@ -157,7 +345,7 @@ export function Player() {
           s.pos.z = nz;
         }
       }
-    } else {
+    } else if (roverDrivable) {
       // consume new click target
       if (moveCommand.current) {
         const target = moveCommand.current;
@@ -191,6 +379,55 @@ export function Player() {
           s.heading += dh * Math.min(1, delta * 10);
         }
       }
+    } else {
+      // Drone/Satellite/Tour: rover parks, but still accepts a queued
+      // click target so it's waiting wherever you sent it when you
+      // switch back to Navigate/Street View/Orbit.
+      moveCommand.current = null;
+    }
+
+    // Drone flight — WASD flies the camera itself, rover stays put
+    if (viewMode === "drone") {
+      if (!panelOpenRef.current) {
+        if (k.left) s.droneYaw += TURN_RATE * delta;
+        if (k.right) s.droneYaw -= TURN_RATE * delta;
+        let flyAmt = 0;
+        if (k.forward && !k.reverse) flyAmt = DRONE_SPEED * delta;
+        else if (k.reverse && !k.forward) flyAmt = -DRONE_SPEED * 0.6 * delta;
+        if (flyAmt !== 0) {
+          const dir = new THREE.Vector3(Math.sin(s.droneYaw), 0, Math.cos(s.droneYaw));
+          s.dronePos.x += dir.x * flyAmt;
+          s.dronePos.z += dir.z * flyAmt;
+        }
+      }
+      const bound = EXTENT + 12;
+      s.dronePos.x = THREE.MathUtils.clamp(s.dronePos.x, -bound, bound);
+      s.dronePos.z = THREE.MathUtils.clamp(s.dronePos.z, -bound, bound);
+      s.dronePos.y = THREE.MathUtils.clamp(s.droneAlt, DRONE_ALT_MIN, DRONE_ALT_MAX);
+    }
+
+    // Satellite pan — WASD pans the locked top-down view
+    if (viewMode === "satellite") {
+      if (!panelOpenRef.current) {
+        const step = SAT_PAN_SPEED * delta;
+        if (k.forward) s.satPos.z -= step;
+        if (k.reverse) s.satPos.z += step;
+        if (k.left) s.satPos.x -= step;
+        if (k.right) s.satPos.x += step;
+      }
+      const bound = EXTENT + 10;
+      s.satPos.x = THREE.MathUtils.clamp(s.satPos.x, -bound, bound);
+      s.satPos.z = THREE.MathUtils.clamp(s.satPos.z, -bound, bound);
+    }
+
+    // Guided tour — auto-advance through every landmark
+    if (viewMode === "tour" && tourStops.length > 0) {
+      s.tourT += delta;
+      if (s.tourT > TOUR_DWELL) {
+        s.tourT = 0;
+        s.tourIndex = (s.tourIndex + 1) % tourStops.length;
+        onTourStop?.(tourStops[s.tourIndex].name);
+      }
     }
 
     playerPos.current.x = s.pos.x;
@@ -218,7 +455,7 @@ export function Player() {
       marker.current.scale.setScalar(1 + (1 - s.markerT) * 0.8);
     }
 
-    // camera: building focus overrides view mode; otherwise follow or POV
+    // camera: building focus always wins; otherwise the active mode
     let wantPos: THREE.Vector3;
     let wantLook: THREE.Vector3;
     let lerpBase = 0.0015;
@@ -228,6 +465,33 @@ export function Player() {
       wantPos = focusView.door.clone().add(focusView.out.clone().multiplyScalar(dist));
       wantPos.y = THREE.MathUtils.clamp(7.5 * s.zoom, 2.5, 16);
       wantLook = focusView.center;
+    } else if (viewMode === "tour" && tourStops.length > 0) {
+      const stop = tourStops[s.tourIndex];
+      wantPos = stop.camPos;
+      wantLook = stop.look;
+      lerpBase = 0.0006; // slow, cinematic glide between stops
+    } else if (viewMode === "orbit") {
+      const radius = ORBIT_RADIUS * s.zoom;
+      const height = CAM_OFFSET.y * THREE.MathUtils.clamp(s.zoom, 0.7, 1.5);
+      wantPos = new THREE.Vector3(
+        s.pos.x + Math.sin(s.orbitYaw) * radius,
+        height,
+        s.pos.z + Math.cos(s.orbitYaw) * radius
+      );
+      wantLook = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+    } else if (viewMode === "drone") {
+      wantPos = s.dronePos.clone();
+      const lookDir = new THREE.Vector3(
+        Math.sin(s.droneYaw),
+        -0.25,
+        Math.cos(s.droneYaw)
+      ).normalize();
+      wantLook = wantPos.clone().addScaledVector(lookDir, 10);
+      lerpBase = 0.00004; // snappy, first-person-adjacent piloting feel
+    } else if (viewMode === "satellite") {
+      wantPos = new THREE.Vector3(s.satPos.x, s.satAlt, s.satPos.z + 0.01);
+      wantLook = new THREE.Vector3(s.satPos.x, 0, s.satPos.z);
+      lerpBase = 0.0008;
     } else if (viewMode === "pov") {
       wantPos = new THREE.Vector3(s.pos.x, EYE_HEIGHT, s.pos.z);
       const lookDir = new THREE.Vector3(Math.sin(s.heading), 0, Math.cos(s.heading));

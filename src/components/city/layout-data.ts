@@ -54,7 +54,7 @@ export const buildings: BuildingDef[] = projects.map((project, i) => ({
 }));
 
 export interface KioskDef {
-  id: "about" | "contact" | "resume";
+  id: "about" | "contact" | "resume" | "skills";
   label: string;
   position: [number, number];
   accent: string;
@@ -62,9 +62,13 @@ export interface KioskDef {
 
 export const kiosks: KioskDef[] = [
   { id: "about", label: "About", position: [8, -8], accent: "#3b82f6" },
-  { id: "contact", label: "Contact", position: [-8, 8], accent: "#10b981" },
-  { id: "resume", label: "Resume", position: [8, 8], accent: "#f59e0b" },
+  { id: "contact", label: "Communication Hub", position: [-8, 8], accent: "#10b981" },
+  { id: "resume", label: "Documentation Center", position: [8, 8], accent: "#f59e0b" },
+  { id: "skills", label: "Tech District", position: [-8, -8], accent: "#a78bfa" },
 ];
+
+/** Display name for the project-buildings cluster, used in the Directory. */
+export const INNOVATION_DISTRICT_LABEL = "Innovation District";
 
 export const NILA_POS: [number, number] = [4, 15];
 
