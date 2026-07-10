@@ -1,0 +1,30 @@
+---
+title: "Creepage and Clearance for High-Voltage Battery PCBs"
+excerpt: "A practical walkthrough of spacing rules for boards that touch a 1000 V DC bus — standards, slots, coatings, and the layout habits that pass review."
+date: "2026-02-27"
+categories: ["PCB", "BMS", "Power Electronics"]
+---
+
+Boards inside a battery rack live next to a DC bus that can exceed 1000 V. Getting spacing wrong isn't a signal-integrity bug — it's a fire. Here is the checklist I apply to every high-voltage layout before it goes to fab.
+
+## Know your working voltage, not your nominal
+
+Spacing is driven by the **maximum working voltage** between two conductors, including transients. A "48 V" string in a 16-string rack can put hundreds of volts between adjacent measurement channels during a fault. Build a voltage map of the board first; the schematic won't do it for you.
+
+## Creepage vs. clearance
+
+- **Clearance** is the shortest distance through air. It protects against flashover and scales with overvoltage category and altitude.
+- **Creepage** is the shortest distance along the surface. It protects against tracking and scales with pollution degree and the CTI of your laminate.
+
+Creepage is almost always the binding constraint on FR-4. IEC 60664-1 tables give the numbers; for a pollution degree 2 environment and material group IIIa, expect roughly 6.3 mm at 630 V working voltage.
+
+## Layout techniques that buy margin
+
+1. **Routed slots** under optocouplers and across isolation boundaries — a 1 mm slot resets the creepage path.
+2. **Guard the boundary** — keep a silkscreen-marked keep-out band with no copper, vias, or test points.
+3. **One boundary, one crossing** — every isolation crossing (isoSPI transformer, digital isolator, isolated DC-DC) should be visible in a single column on the board.
+4. **Conformal coating** helps pollution degree, but only if your process controls coverage — don't claim it in the safety file unless production can prove it.
+
+## Review like an auditor
+
+Print the layout 2:1, draw the isolation boundary in red, and measure every crossing with the ruler tool. Ten minutes of this has caught more safety issues in my designs than any DRC deck.

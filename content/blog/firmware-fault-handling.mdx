@@ -1,0 +1,38 @@
+---
+title: "Fault Handling Patterns for Safety-Relevant Firmware"
+excerpt: "Latched faults, debounce windows, and safe states — an architecture for embedded fault handling that auditors and field engineers both like."
+date: "2025-09-21"
+categories: ["Embedded", "BMS"]
+---
+
+Most firmware treats faults as an afterthought: an `if` here, an error LED there. In a battery system, fault handling *is* the product — the cells are just the part you can't patch. This is the architecture I've converged on across several BMS generations.
+
+## Every fault is a state machine, not a flag
+
+A boolean `overvoltage_fault` can't answer the questions that matter: is it debouncing? latched? acknowledged? recovering? Model each fault as a small state machine:
+
+```
+CLEAR → QUALIFYING → ACTIVE → LATCHED
+              ↑                    |
+              └──── RECOVERING ←───┘
+```
+
+- **QUALIFYING** applies a debounce window (e.g. 500 ms above threshold) so a contactor bounce doesn't trip a hard fault.
+- **ACTIVE** faults drive the reaction matrix (derate, open contactors, alarm).
+- **LATCHED** faults require an explicit reset condition — power cycle, service tool, or a supervised recovery sequence. Which one is a *safety decision*, documented per fault.
+
+## Separate detection from reaction
+
+Detection code answers "is cell 12 over 4.25 V?" — it lives near the drivers, runs at a fixed rate, and knows nothing about contactors. A single **reaction matrix** maps (fault, severity) → (system response). This separation is what lets you review safety behavior on one page, and it's the first thing a functional-safety assessor asks to see.
+
+## Design the safe state honestly
+
+"Open all contactors" is the obvious safe state — until you're mid-discharge at 200 A, where opening under load stresses the contactor, or in a vehicle where dropping propulsion is its own hazard. Define the safe state *per operating mode*, and make the fault handler mode-aware. If two faults demand contradictory reactions, the resolution order must be explicit in code and in the safety file.
+
+## Make it observable
+
+Every fault transition gets a timestamped log entry with the triggering raw value. Freeze-frame data — the ten seconds of telemetry before a latch — has cut my average field-debugging time from days to hours. Budget the flash for it from day one; you will never regret the 64 KB.
+
+## The test that matters
+
+Fault-inject in HIL, not just unit tests: drive a real overvoltage on channel 12 with the pack simulator and verify the contactor command, the log entry, and the CAN alarm all within the reaction-time budget. If your fault path has never opened a real contactor, it doesn't work yet.

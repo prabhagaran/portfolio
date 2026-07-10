@@ -1,0 +1,32 @@
+---
+title: "Designing Precharge Circuits That Survive the Field"
+excerpt: "Inrush math, resistor energy ratings, welded contactor detection — the details that separate a textbook precharge from a production one."
+date: "2025-11-08"
+categories: ["Power Electronics", "BMS", "Battery"]
+---
+
+Close a contactor straight into a discharged DC-link capacitor and you get a current spike limited only by wiring resistance — enough to weld contacts on day one or, worse, on day four hundred. Precharge circuits are simple in principle and full of traps in practice.
+
+## The math takes five minutes
+
+An RC precharge into capacitance C from bus voltage V: peak current is V/R, and you wait ~5τ to reach 99%. For an 800 V bus into 2 mF with a 100 Ω resistor, peak current is 8 A and precharge takes about one second. Everyone gets this far.
+
+## The energy rating is where designs die
+
+The resistor dissipates ½CV² **every precharge** — for the example above, 640 J. A resistor rated 100 W continuous can still fail from single-pulse energy. Check the manufacturer's pulse-energy curve, not the wattage. Then design for the abuse case: firmware retries against a shorted load. Three retries in ten seconds is 1.9 kJ. Either the resistor is rated for it, or firmware must enforce a cooldown — pick one and write it down.
+
+## Verify before you close the main
+
+The precharge sequence is also your best diagnostic window:
+
+1. **Welded main contactor** — if the link voltage is already at bus level before precharge starts, a contact is stuck. Do not proceed.
+2. **Short on the link** — if voltage hasn't reached ~90% of bus within the expected 5τ window, open the precharge path and latch a fault. This timeout is the single most important line of firmware in the whole sequence.
+3. **Voltage-matched closing** — only close the main contactor when the differential across it is below a threshold (a few volts). This is what actually protects the contacts.
+
+## Component selection notes
+
+- Use a contactor or relay rated for the precharge *making* current, not just carry current.
+- Consider an NTC in series for cold-start inrush if your bus voltage varies widely — but remember NTCs stay hot after a retry and lose their limiting.
+- Sense the link voltage on the load side of the main contactor with its own divider; sharing the pack-side divider blinds you to exactly the faults you're checking for.
+
+None of this adds cost worth mentioning. All of it shows up in the field-return statistics.

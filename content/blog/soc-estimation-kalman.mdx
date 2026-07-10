@@ -1,0 +1,32 @@
+---
+title: "SoC Estimation Beyond Coulomb Counting"
+excerpt: "Why ampere-hour integration drifts, what an EKF actually buys you, and a pragmatic hybrid estimator that ships on a Cortex-M4."
+date: "2026-01-15"
+categories: ["BMS", "Battery", "Embedded"]
+---
+
+State of charge is the one number everyone asks the BMS for and the one number it can't measure. You infer it — and the quality of that inference decides whether your pack strands its user at "20%" or quietly over-discharges at "5%".
+
+## Why coulomb counting alone drifts
+
+Integrating current is exact in theory and leaky in practice:
+
+- **Sensor offset** integrates linearly into SoC error — 50 mA of offset on a 100 Ah pack is ~1.2% per day.
+- **Current-dependent gain error** shows up on every fast charge.
+- **Coulombic efficiency** isn't 1.0, and it changes with temperature and age.
+
+Coulomb counting gives you excellent short-term *shape* and unbounded long-term *drift*.
+
+## What the OCV curve gives back
+
+Open-circuit voltage maps to SoC well — but only at rest, and for LFP chemistry the curve is so flat between 20% and 80% that a millivolt of measurement error is several percent of SoC. So OCV correction gives you bounded long-term accuracy and useless short-term dynamics: the exact complement of coulomb counting.
+
+## The EKF, demystified
+
+An extended Kalman filter is just a principled way to blend the two: propagate SoC with the current integral, then correct it with the voltage prediction error from an equivalent-circuit model (typically 2RC). The tuning lives in two covariance matrices — trust in the model vs. trust in the voltage measurement.
+
+On a Cortex-M4F, a 3-state EKF per pack runs comfortably under 50 µs per step at 10 Hz. The real cost is not CPU — it's **characterization**: you need OCV curves and RC parameters across temperature, which means weeks of cell testing before the first line of filter code matters.
+
+## What I actually ship
+
+A hybrid: coulomb counting as the backbone, EKF correction gated by data quality (rested cells, valid temperature range, sane innovation), and hard recalibration at full charge. Boring, explainable, and it holds ±3% over a full season of field data — which is what the warranty team actually asked for.

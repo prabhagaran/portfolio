@@ -1,0 +1,34 @@
+---
+title: "Debugging CAN Bus Errors: A Field Guide"
+excerpt: "Error frames, bus-off lockouts, and ghost nodes — a systematic method for finding CAN faults with a scope and a $30 adapter."
+date: "2026-05-30"
+categories: ["CAN", "Embedded", "BMS"]
+---
+
+CAN is famously robust, which means that when it breaks, it breaks confusingly. A node that works on the bench drops off in the rack; error counters creep up only when the contactors close. This is the debugging sequence I follow, ordered by how often each step finds the fault.
+
+## 1. Look at the physical layer first
+
+Put a scope on CAN_H and CAN_L, referenced to the node's ground:
+
+- **Recessive level** should sit near 2.5 V on both lines. A recessive level near 0 V or rail usually means a dead transceiver or a shorted line.
+- **Dominant differential** should be ~2 V. Weak differentials point to missing termination or too many nodes in listen-only.
+- **Ringing** after each edge means a termination problem — measure the bus with power off: you want ~60 Ω between H and L.
+
+Half of all "protocol" problems I've chased were wiring: swapped H/L on one node, a cold-soldered terminator, or a stub way past the length budget.
+
+## 2. Read the error counters, not just the frames
+
+Every CAN controller keeps TEC/REC error counters, and most drivers expose them. A node that repeatedly hits **bus-off** (TEC > 255) is telling you its transmissions are being rejected — usually a bit-timing mismatch or a physical fault local to that node, not "the bus being flaky."
+
+Check sample point configuration across all nodes. Two nodes can talk at "500 kbit/s" with different sample points and work in isolation, then fail with a longer harness.
+
+## 3. Correlate with the power domain
+
+Battery systems switch large currents. If errors cluster around contactor events or converter load steps, you have a coupling problem: common-mode transients riding into the transceiver. Fixes, in order of preference: route the bus pair as a tight twisted pair away from power runs, add a common-mode choke, verify the shield/ground topology, and only then reach for split termination with a common-mode capacitor.
+
+## 4. Only then decode the protocol
+
+Once the physical layer is proven, DBC-level debugging is easy: log everything, diff against the expected message matrix, and watch for counter/CRC signals that expose stale data an alive-but-frozen node keeps retransmitting.
+
+The theme: CAN debugging is 80% electrons, 20% software. Start at the copper.

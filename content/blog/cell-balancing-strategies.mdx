@@ -1,0 +1,32 @@
+---
+title: "Passive vs. Active Cell Balancing: What Production Packs Actually Use"
+excerpt: "Active balancing looks great on paper. Here's why most production BMS designs still burn the difference as heat — and when that's the right call."
+date: "2026-04-18"
+categories: ["BMS", "Battery", "Power Electronics"]
+---
+
+Every battery pack drifts. Manufacturing spread, temperature gradients across the enclosure, and uneven self-discharge mean that after a few hundred cycles, your cells no longer sit at the same state of charge. Balancing is how the BMS claws that back — and the choice between passive and active balancing shapes cost, thermal design, and PCB area more than almost any other BMS decision.
+
+## Passive balancing: the honest workhorse
+
+Passive balancing bleeds charge from the highest cells through a resistor until they match the lowest. It is lossy by definition, but it is also:
+
+- **Cheap** — one FET and one resistor per cell, often integrated into the AFE.
+- **Simple to validate** — the failure modes are well understood and easy to test at EOL.
+- **Sufficient** — for packs that spend hours at top-of-charge (BESS, most EVs), there's plenty of time to bleed a few hundred mAh.
+
+The design work is thermal, not electrical. A 16-cell board balancing at 150 mA per channel can dissipate several watts in a small area. Spread the bleed resistors, pour copper, and derate for the hottest ambient you'll ship into.
+
+## Active balancing: when the math justifies it
+
+Active balancing shuttles charge between cells with capacitors, inductors, or a flyback winding. It preserves energy and can rebalance during discharge — valuable when:
+
+- The pack is **large and expensive** (grid-scale, aerospace) and 1–2% recovered capacity pays for the silicon.
+- **Charge windows are short** — a pack that never sits at CV can't finish a passive balance.
+- Cells are **second-life** with wide capacity spread, where passive bleeding would run constantly.
+
+The cost is real: magnetics, more layout area, harder EMC, and a failure-mode analysis that now includes energy transfer paths between cells.
+
+## The decision rule I use
+
+Estimate the daily imbalance in mAh, then check whether your passive bleed current can correct it in the time the pack spends above the balance threshold. If yes — and for most systems it is — passive wins. Ship the simple thing, spend the saved engineering weeks on better SoC estimation instead.
