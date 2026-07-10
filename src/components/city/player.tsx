@@ -1,13 +1,16 @@
 "use client";
 
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
-import { useFrame } from "@react-three/fiber";
+import { useFrame, useThree } from "@react-three/fiber";
 import { useCity } from "./city-context";
 import { buildings, buildPath, SPAWN } from "./layout-data";
 
 const SPEED = 9; // units/sec
 const CAM_OFFSET = new THREE.Vector3(11, 15, 12);
+const ZOOM_MIN = 0.45; // closest — mostly used near buildings
+const ZOOM_MAX = 2.2; // farthest — wide view of the block
+const ZOOM_SPEED = 0.0016;
 
 /**
  * Click-to-move rover + follow camera.
@@ -28,7 +31,25 @@ export function Player() {
     camPos: new THREE.Vector3(SPAWN[0] + CAM_OFFSET.x, CAM_OFFSET.y, SPAWN[1] + CAM_OFFSET.z),
     camLook: new THREE.Vector3(SPAWN[0], 1, SPAWN[1]),
     markerT: 0,
+    zoom: 1,
   });
+
+  // scroll-wheel zoom: adjusts camera distance, clamped to a sane range
+  const { gl } = useThree();
+  useEffect(() => {
+    const el = gl.domElement;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const s = state.current;
+      s.zoom = THREE.MathUtils.clamp(
+        s.zoom + e.deltaY * ZOOM_SPEED,
+        ZOOM_MIN,
+        ZOOM_MAX
+      );
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, [gl]);
 
   const focusView = useMemo(() => {
     if (!selected) return null;
@@ -39,9 +60,7 @@ export function Player() {
     const out = door.clone().sub(new THREE.Vector3(def.position[0], 0, def.position[1]));
     out.y = 0;
     out.normalize();
-    const camPos = door.clone().add(out.multiplyScalar(11));
-    camPos.y = 7.5;
-    return { camPos, look: center };
+    return { door, out, center };
   }, [selected]);
 
   useFrame(({ camera }, rawDelta) => {
@@ -106,13 +125,19 @@ export function Player() {
       marker.current.scale.setScalar(1 + (1 - s.markerT) * 0.8);
     }
 
-    // camera: follow player, or glide to focused building
-    const wantPos = focusView
-      ? focusView.camPos
-      : s.pos.clone().add(CAM_OFFSET);
-    const wantLook = focusView
-      ? focusView.look
-      : new THREE.Vector3(s.pos.x, 1, s.pos.z);
+    // camera: follow player, or glide to focused building — both
+    // respect the scroll-wheel zoom factor
+    let wantPos: THREE.Vector3;
+    let wantLook: THREE.Vector3;
+    if (focusView) {
+      const dist = 11 * s.zoom;
+      wantPos = focusView.door.clone().add(focusView.out.clone().multiplyScalar(dist));
+      wantPos.y = THREE.MathUtils.clamp(7.5 * s.zoom, 2.5, 16);
+      wantLook = focusView.center;
+    } else {
+      wantPos = s.pos.clone().add(CAM_OFFSET.clone().multiplyScalar(s.zoom));
+      wantLook = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+    }
     const k = 1 - Math.pow(0.0015, delta); // framerate-independent lerp
     s.camPos.lerp(wantPos, k);
     s.camLook.lerp(wantLook, k);

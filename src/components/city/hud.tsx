@@ -332,6 +332,10 @@ function InfoPanels() {
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              Scroll the mouse wheel to zoom the camera in and out.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
               The plaza kiosks cover About, Contact, and Resume.
             </li>
             <li className="flex gap-2.5">
@@ -432,7 +436,7 @@ export function CityHud({
 
       {/* bottom-left hint / bottom-right minimap */}
       <div className="absolute bottom-4 left-4 hidden max-w-[240px] rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
-        Click the street to move · click a building to open its project
+        Click the street to move · scroll to zoom · click a building to open its project
       </div>
       <div className="absolute bottom-4 right-4">
         <Minimap />
