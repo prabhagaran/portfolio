@@ -154,3 +154,46 @@ export function createFacadeTextures(): {
   emissiveMap.colorSpace = THREE.SRGBColorSpace;
   return { map, emissiveMap };
 }
+
+/**
+ * LED ticker banner: bright text on black with a faint dot-matrix
+ * scanline overlay, sized to exactly one loop of the message. Tile it
+ * (`repeat.x > 1`) and animate `texture.offset.x` each frame for a
+ * continuous marquee scroll — no per-frame canvas redraw needed.
+ */
+export function createLEDBannerTexture(text: string, color: string): THREE.CanvasTexture {
+  const height = 64;
+  const label = `  ${text.toUpperCase()}   •   `;
+
+  const measure = document.createElement("canvas").getContext("2d")!;
+  measure.font = '700 40px "Courier New", monospace';
+  const width = Math.max(256, Math.ceil(measure.measureText(label).width));
+
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d")!;
+
+  ctx.fillStyle = "#020403";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.font = '700 40px "Courier New", monospace';
+  ctx.textBaseline = "middle";
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 9;
+  ctx.fillStyle = color;
+  ctx.fillText(label, 0, height / 2 + 2);
+
+  // LED cell gaps — faint vertical scanlines over the glowing text
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = "rgba(0,0,0,0.35)";
+  for (let x = 0; x < width; x += 3) {
+    ctx.fillRect(x, 0, 1, height);
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.ClampToEdgeWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}

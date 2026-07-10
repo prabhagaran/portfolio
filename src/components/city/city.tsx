@@ -21,7 +21,11 @@ import {
   createGroundTexture,
   createRoadTexture,
   createSidewalkTexture,
+  createLEDBannerTexture,
 } from "./textures";
+
+const LED_SCROLL_SPEED = 0.22; // texture UV units per second
+const LED_REPEAT = 3; // how many loops of the message tile across the banner
 
 /* ---------------- ground + streets ---------------- */
 
@@ -131,7 +135,13 @@ function Building({ def }: { def: BuildingDef }) {
   const trimMat = useRef<THREE.MeshStandardMaterial>(null);
   const [w, h, d] = def.size;
 
-  useFrame(() => {
+  const ledTex = useMemo(() => {
+    const tex = createLEDBannerTexture(def.project.name, def.accent);
+    tex.repeat.set(LED_REPEAT, 1);
+    return tex;
+  }, [def.project.name, def.accent]);
+
+  useFrame((_, delta) => {
     const t = nightT.current;
     if (winMat.current) {
       winMat.current.emissiveIntensity = 0.08 + t * 1.5 + (hover ? 0.25 : 0);
@@ -139,6 +149,7 @@ function Building({ def }: { def: BuildingDef }) {
     if (trimMat.current) {
       trimMat.current.emissiveIntensity = (0.5 + t * 2.2) * (hover ? 1.8 : 1);
     }
+    ledTex.offset.x -= delta * LED_SCROLL_SPEED;
   });
 
   function onClick(e: ThreeEvent<MouseEvent>) {
@@ -182,6 +193,11 @@ function Building({ def }: { def: BuildingDef }) {
       <mesh position={[0, h + 0.15, 0]}>
         <boxGeometry args={[w + 0.4, 0.3, d + 0.4]} />
         <meshStandardMaterial color="#0b111c" roughness={1} />
+      </mesh>
+      {/* LED ticker banner — scrolls the project name */}
+      <mesh position={[0, h + 0.62, d / 2 + 0.06]}>
+        <boxGeometry args={[w * 0.92, 0.5, 0.08]} />
+        <meshBasicMaterial map={ledTex} toneMapped={false} />
       </mesh>
       {/* neon trim near roof */}
       <mesh position={[0, h - 0.6, d / 2 + 0.06]}>

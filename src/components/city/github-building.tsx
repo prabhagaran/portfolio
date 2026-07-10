@@ -6,8 +6,11 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import { useCity } from "./city-context";
 import { GITHUB_BUILDING } from "./layout-data";
-import { createFacadeTextures } from "./textures";
+import { createFacadeTextures, createLEDBannerTexture } from "./textures";
 import { LEVEL_COLORS, type ContribData } from "./github-data";
+
+const LED_SCROLL_SPEED = 0.22;
+const LED_REPEAT = 3;
 
 const LEVEL_GLOW = ["#000000", "#1f3a5c", "#2c5c8c", "#3b82c9", "#63a9ff"];
 
@@ -79,7 +82,13 @@ export function GithubBuilding() {
   );
   const facade = contribFacade ?? fallback;
 
-  useFrame(() => {
+  const ledTex = useMemo(() => {
+    const tex = createLEDBannerTexture("GitHub Data Tower", "#63a9ff");
+    tex.repeat.set(LED_REPEAT, 1);
+    return tex;
+  }, []);
+
+  useFrame((_, delta) => {
     const t = nightT.current;
     if (winMat.current) {
       // baseline is higher than a normal building: the grid should read
@@ -89,6 +98,7 @@ export function GithubBuilding() {
     if (trimMat.current) {
       trimMat.current.emissiveIntensity = (0.6 + t * 2.4) * (hover ? 1.8 : 1);
     }
+    ledTex.offset.x -= delta * LED_SCROLL_SPEED;
   });
 
   function onClick(e: ThreeEvent<MouseEvent>) {
@@ -130,6 +140,11 @@ export function GithubBuilding() {
       <mesh position={[0, h + 0.18, 0]}>
         <boxGeometry args={[w + 0.5, 0.35, d + 0.5]} />
         <meshStandardMaterial color="#0b111c" roughness={1} />
+      </mesh>
+      {/* LED ticker banner */}
+      <mesh position={[0, h + 0.46, d / 2 + 0.07]}>
+        <boxGeometry args={[w * 0.92, 0.32, 0.08]} />
+        <meshBasicMaterial map={ledTex} toneMapped={false} />
       </mesh>
       {/* rooftop beacon — a small always-on marker so the tower reads
           as a landmark from across the city */}
