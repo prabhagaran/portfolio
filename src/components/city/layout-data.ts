@@ -9,6 +9,13 @@ export const STREET_HALF = 4.5; // half-width of a street corridor
 export const EXTENT = 42; // streets run from -EXTENT to +EXTENT
 export const PLAZA_HALF = 11; // central plaza half-size
 export const SIDEWALK_WIDTH = 2.4; // grey strip flanking each street
+export const SIDEWALK_CENTER = STREET_HALF + SIDEWALK_WIDTH / 2; // where pedestrians walk
+/**
+ * Roadside furniture (lamp posts, signal poles, street signs) sits
+ * here — safely past the sidewalk's outer edge so nothing standing
+ * still ends up planted on the pedestrian walking line.
+ */
+export const FURNITURE_OFFSET = STREET_HALF + SIDEWALK_WIDTH + 0.6;
 
 export const SPAWN: [number, number] = [0, 18];
 

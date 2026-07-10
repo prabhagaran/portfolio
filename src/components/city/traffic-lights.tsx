@@ -3,10 +3,10 @@
 import { useRef } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
-import { STREET_HALF } from "./layout-data";
+import { FURNITURE_OFFSET } from "./layout-data";
 import { getSignalState } from "./traffic-signal";
 
-const OFF = STREET_HALF + 1.1;
+const OFF = FURNITURE_OFFSET;
 const POLE_HEIGHT = 3.2;
 
 interface PoleDef {

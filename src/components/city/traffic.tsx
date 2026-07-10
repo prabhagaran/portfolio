@@ -6,6 +6,7 @@ import { useFrame } from "@react-three/fiber";
 import { useCity } from "./city-context";
 import { EXTENT, STREET_HALF } from "./layout-data";
 import { getSignalState } from "./traffic-signal";
+import { createObstacleRegistry } from "./vehicle-registry";
 
 /** Deterministic PRNG (mulberry32) — stable traffic layout across renders. */
 function mulberry32(seed: number) {
@@ -56,6 +57,9 @@ const CAR_COLORS = ["#c0392b", "#e67e22", "#f1c40f", "#8e44ad", "#16a085", "#334
 const BUS_COLORS = ["#2563eb", "#059669", "#f59e0b"];
 const VEHICLE_COUNT = 10;
 
+/** Read by Pedestrians to yield when a vehicle is about to cross their path. */
+export const vehicleObstacles = createObstacleRegistry(VEHICLE_COUNT);
+
 function laneToWorld(lane: Lane, t: number): { x: number; z: number; heading: number } {
   const p = t * LANE_LENGTH - EXTENT; // -EXTENT..EXTENT
   switch (lane) {
@@ -101,6 +105,7 @@ function generateVehicles(count: number): VehicleDef[] {
 interface VehicleRuntime {
   def: VehicleDef;
   t: number; // mutated directly each frame — not React state
+  obstacleIndex: number; // slot in the shared vehicleObstacles registry
   group: RefObject<THREE.Group | null>;
   wheels: RefObject<THREE.Group | null>;
   headMat: THREE.MeshStandardMaterial;
@@ -108,9 +113,10 @@ interface VehicleRuntime {
 }
 
 function buildRuntimes(defs: VehicleDef[]): VehicleRuntime[] {
-  return defs.map((def) => ({
+  return defs.map((def, i) => ({
     def,
     t: def.t,
+    obstacleIndex: i,
     group: createRef<THREE.Group>(),
     wheels: createRef<THREE.Group>(),
     headMat: new THREE.MeshStandardMaterial({
@@ -262,6 +268,11 @@ export function Traffic() {
         r.headMat.emissiveIntensity = 0.5 + nightT.current * 2.2;
         // taillights flare up like brake lights while slowing
         r.tailMat.emissiveIntensity = 0.4 + nightT.current * 1.6 + (speedMul < 0.95 ? 1.4 : 0);
+
+        // publish position so pedestrians can yield when crossing this lane
+        const obstacle = vehicleObstacles[r.obstacleIndex];
+        obstacle.position.set(x, 0, z);
+        obstacle.radius = r.def.type === "bus" ? 1.7 : 1.1;
       }
     }
   });

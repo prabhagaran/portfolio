@@ -14,6 +14,7 @@ import { StreetSigns } from "./street-signs";
 import { GithubBuilding } from "./github-building";
 import { Traffic } from "./traffic";
 import { TrafficLights } from "./traffic-lights";
+import { Pedestrians } from "./pedestrians";
 import { createGlowTexture } from "./textures";
 
 // Same direction the "sun" directional light shines from, pushed out
@@ -188,6 +189,7 @@ export function CityScene({
       <Park />
       <Traffic />
       <TrafficLights />
+      <Pedestrians />
       <Nila />
       <Player onTourStop={onTourStop} />
       <Rain />

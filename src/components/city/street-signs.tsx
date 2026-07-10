@@ -1,7 +1,7 @@
 "use client";
 
 import { Html } from "@react-three/drei";
-import { PLAZA_HALF, STREET_HALF } from "./layout-data";
+import { PLAZA_HALF, FURNITURE_OFFSET } from "./layout-data";
 
 /** Street names for the two corridors crossing at the central plaza. */
 const EW_STREET = "Circuit Avenue";
@@ -15,9 +15,8 @@ interface SignDef {
 }
 
 const OFFSET = PLAZA_HALF + 4;
-// push the post off the roadway onto the "sidewalk" — just past the
-// street's walkable half-width, not on the centerline
-const SIDE = STREET_HALF + 1.2;
+// past the sidewalk's outer edge, clear of the pedestrian walking line
+const SIDE = FURNITURE_OFFSET;
 
 const SIGNS: SignDef[] = [
   { position: [OFFSET, SIDE], label: EW_STREET, arrow: "→", accent: "#3b82f6" },

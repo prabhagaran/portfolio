@@ -12,6 +12,7 @@ import {
   EXTENT,
   STREET_HALF,
   SIDEWALK_WIDTH,
+  FURNITURE_OFFSET,
   type BuildingDef,
   type KioskDef,
 } from "./layout-data";
@@ -298,9 +299,11 @@ export function Kiosks() {
 
 /* ---------------- streetlights ---------------- */
 
+// Street-side lamps sit at FURNITURE_OFFSET — past the sidewalk's
+// outer edge, clear of where pedestrians actually walk.
 const LAMP_POSITIONS: [number, number][] = [
-  [-36, -5.5], [-20, 5.5], [20, -5.5], [36, 5.5],
-  [-5.5, -20], [5.5, -36], [-5.5, 36], [5.5, 20],
+  [-36, -FURNITURE_OFFSET], [-20, FURNITURE_OFFSET], [20, -FURNITURE_OFFSET], [36, FURNITURE_OFFSET],
+  [-FURNITURE_OFFSET, -20], [FURNITURE_OFFSET, -36], [-FURNITURE_OFFSET, 36], [FURNITURE_OFFSET, 20],
   [-10.5, -10.5], [10.5, 10.5],
 ];
 
