@@ -45,15 +45,27 @@ const SAT_DEFAULT_ALT = 55;
 // Guided tour
 const TOUR_DWELL = 4.5; // seconds per stop
 
-// Free look (Street View / Drone View): hold right mouse button and
-// drag to look around; releasing eases the camera back to facing
-// the direction of travel.
+// Free look — right mouse button + drag, active in every camera mode
+// except the scripted Guided Tour. It's persistent (stays wherever
+// you leave it) rather than snapping back the instant you release the
+// button; it only eases back toward "facing forward" while you're
+// actively driving/flying, so steering never fights the view.
 const LOOK_SPEED = 0.0055;
-const LOOK_RECENTER_RATE = 6; // higher = snaps back faster when released
-const POV_PITCH_LIMIT = 1.1;
-const DRONE_PITCH_LIMIT_UP = 0.6;
-const DRONE_PITCH_LIMIT_DOWN = -1.3;
+const LOOK_RECENTER_RATE = 6;
+const POV_PITCH_LIMIT = 1.45; // near-vertical, enough to look up at towers
+const DRONE_PITCH_LIMIT_UP = 1.0;
+const DRONE_PITCH_LIMIT_DOWN = -1.45;
 const DRONE_DEFAULT_PITCH = -0.25;
+const CHASE_PITCH_LIMIT = 1.3; // Navigate / Orbit / Satellite look-around range
+const LOOK_TARGET_DIST = 16;
+
+// Street View zoom — scroll wheel narrows/widens the field of view,
+// since a first-person rig has no "distance" to close in on.
+const DEFAULT_FOV = 42;
+const POV_FOV_MIN = 16; // zoomed in
+const POV_FOV_MAX = 55; // zoomed out
+const POV_FOV_SPEED = 0.03;
+const FOV_EASE_RATE = 8;
 
 // Car-style controls: up/down throttle forward/reverse along the
 // current heading, left/right steer — nothing snaps sideways. In
@@ -97,12 +109,32 @@ function buildingShot(
   return { camPos, center };
 }
 
+/** Rotates a fixed look-at point around `pos` by a yaw/pitch offset. */
+function applyLookOffset(
+  pos: THREE.Vector3,
+  target: THREE.Vector3,
+  offsetYaw: number,
+  offsetPitch: number,
+  pitchLimit: number
+): THREE.Vector3 {
+  const dir = target.clone().sub(pos);
+  const horiz = Math.max(0.0001, Math.hypot(dir.x, dir.z));
+  const baseYaw = Math.atan2(dir.x, dir.z);
+  const basePitch = Math.atan2(dir.y, horiz);
+  const yaw = baseYaw + offsetYaw;
+  const pitch = THREE.MathUtils.clamp(basePitch + offsetPitch, -pitchLimit, pitchLimit);
+  const cosP = Math.cos(pitch);
+  const outDir = new THREE.Vector3(Math.sin(yaw) * cosP, Math.sin(pitch), Math.cos(yaw) * cosP);
+  return pos.clone().addScaledVector(outDir, LOOK_TARGET_DIST);
+}
+
 /**
  * Rover + camera rig for Electronic City. Supports six navigation
  * modes (Navigate, Street View, Orbit, Drone View, Satellite View,
  * Guided Tour) plus Return to Base. Mouse clicks always drive the
  * rover via waypoints; arrow keys/WASD drive the rover in Navigate,
  * Street View and Orbit, or fly free in Drone/pan in Satellite.
+ * Right-click + drag free-looks in every mode but the scripted tour.
  * Selecting a project always shows its doorstep view, regardless of
  * the active camera mode.
  */
@@ -142,12 +174,16 @@ export function Player({
     tourT: 0,
     povLookYaw: Math.PI,
     povLookPitch: 0,
+    povFov: DEFAULT_FOV,
     droneLookYaw: Math.PI,
     droneLookPitch: DRONE_DEFAULT_PITCH,
+    // shared free-look offset for Navigate / Orbit / Satellite, layered
+    // on top of each mode's normal "look at the subject" behavior
+    lookOffsetYaw: 0,
+    lookOffsetPitch: 0,
   });
 
-  // true while the right mouse button is held and dragging — read
-  // inside useFrame to decide whether to auto-recenter the look angles
+  // true while the right mouse button is held and dragging
   const freeLookDragging = useRef(false);
 
   // keyboard state — refs so held keys don't trigger re-renders
@@ -221,6 +257,9 @@ export function Player({
     s.satAlt = SAT_DEFAULT_ALT;
     s.tourIndex = 0;
     s.tourT = 0;
+    s.povFov = DEFAULT_FOV;
+    s.lookOffsetYaw = 0;
+    s.lookOffsetPitch = 0;
   }, [resetTick]);
 
   useEffect(() => {
@@ -254,7 +293,8 @@ export function Player({
 
   const { gl } = useThree();
 
-  // scroll wheel: zoom (follow/orbit) or altitude (drone/satellite)
+  // scroll wheel: zoom (Navigate/Orbit), altitude (Drone/Satellite),
+  // or field-of-view zoom (Street View)
   useEffect(() => {
     const el = gl.domElement;
     const onWheel = (e: WheelEvent) => {
@@ -273,6 +313,12 @@ export function Player({
           SAT_ALT_MIN,
           SAT_ALT_MAX
         );
+      } else if (vm === "pov") {
+        s.povFov = THREE.MathUtils.clamp(
+          s.povFov + e.deltaY * POV_FOV_SPEED,
+          POV_FOV_MIN,
+          POV_FOV_MAX
+        );
       } else {
         s.zoom = THREE.MathUtils.clamp(s.zoom + e.deltaY * ZOOM_SPEED, ZOOM_MIN, ZOOM_MAX);
       }
@@ -281,12 +327,13 @@ export function Player({
     return () => el.removeEventListener("wheel", onWheel);
   }, [gl]);
 
-  // drag-to-rotate, only acts while in Orbit mode
+  // left-drag: rotates the orbit position, only in Orbit mode
   useEffect(() => {
     const el = gl.domElement;
     let dragging = false;
     let lastX = 0;
     const onDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
       if (viewModeRef.current !== "orbit") return;
       dragging = true;
       lastX = e.clientX;
@@ -297,8 +344,8 @@ export function Player({
       lastX = e.clientX;
       state.current.orbitYaw -= dx * ORBIT_DRAG_SPEED;
     };
-    const onUp = () => {
-      dragging = false;
+    const onUp = (e: PointerEvent) => {
+      if (e.button === 0) dragging = false;
     };
     el.addEventListener("pointerdown", onDown);
     window.addEventListener("pointermove", onMove);
@@ -310,17 +357,16 @@ export function Player({
     };
   }, [gl]);
 
-  // free look: hold the right mouse button and drag, only in Street
-  // View / Drone View — suppress the browser context menu on the
-  // canvas so a right-click drags instead of opening a menu
+  // right-drag: free look, active in every mode except Guided Tour —
+  // suppress the browser context menu on the canvas so right-click
+  // drags instead of opening a menu
   useEffect(() => {
     const el = gl.domElement;
     let lastX = 0;
     let lastY = 0;
     const onDown = (e: PointerEvent) => {
       if (e.button !== 2) return;
-      const vm = viewModeRef.current;
-      if (vm !== "pov" && vm !== "drone") return;
+      if (viewModeRef.current === "tour") return;
       freeLookDragging.current = true;
       lastX = e.clientX;
       lastY = e.clientY;
@@ -346,6 +392,14 @@ export function Player({
           s.droneLookPitch - dy * LOOK_SPEED,
           DRONE_PITCH_LIMIT_DOWN,
           DRONE_PITCH_LIMIT_UP
+        );
+      } else {
+        // Navigate, Orbit, Satellite share one look-offset
+        s.lookOffsetYaw -= dx * LOOK_SPEED;
+        s.lookOffsetPitch = THREE.MathUtils.clamp(
+          s.lookOffsetPitch - dy * LOOK_SPEED,
+          -CHASE_PITCH_LIMIT,
+          CHASE_PITCH_LIMIT
         );
       }
     };
@@ -465,14 +519,22 @@ export function Player({
     }
 
     // Drone flight — WASD flies the camera itself, rover stays put
+    let droneFlying = false;
     if (viewMode === "drone") {
       if (!panelOpenRef.current) {
-        if (k.left) s.droneYaw += TURN_RATE * delta;
-        if (k.right) s.droneYaw -= TURN_RATE * delta;
+        if (k.left) {
+          s.droneYaw += TURN_RATE * delta;
+          droneFlying = true;
+        }
+        if (k.right) {
+          s.droneYaw -= TURN_RATE * delta;
+          droneFlying = true;
+        }
         let flyAmt = 0;
         if (k.forward && !k.reverse) flyAmt = DRONE_SPEED * delta;
         else if (k.reverse && !k.forward) flyAmt = -DRONE_SPEED * 0.6 * delta;
         if (flyAmt !== 0) {
+          droneFlying = true;
           const dir = new THREE.Vector3(Math.sin(s.droneYaw), 0, Math.cos(s.droneYaw));
           s.dronePos.x += dir.x * flyAmt;
           s.dronePos.z += dir.z * flyAmt;
@@ -485,13 +547,26 @@ export function Player({
     }
 
     // Satellite pan — WASD pans the locked top-down view
+    let satPanning = false;
     if (viewMode === "satellite") {
       if (!panelOpenRef.current) {
         const step = SAT_PAN_SPEED * delta;
-        if (k.forward) s.satPos.z -= step;
-        if (k.reverse) s.satPos.z += step;
-        if (k.left) s.satPos.x -= step;
-        if (k.right) s.satPos.x += step;
+        if (k.forward) {
+          s.satPos.z -= step;
+          satPanning = true;
+        }
+        if (k.reverse) {
+          s.satPos.z += step;
+          satPanning = true;
+        }
+        if (k.left) {
+          s.satPos.x -= step;
+          satPanning = true;
+        }
+        if (k.right) {
+          s.satPos.x += step;
+          satPanning = true;
+        }
       }
       const bound = EXTENT + 10;
       s.satPos.x = THREE.MathUtils.clamp(s.satPos.x, -bound, bound);
@@ -533,6 +608,15 @@ export function Player({
       marker.current.scale.setScalar(1 + (1 - s.markerT) * 0.8);
     }
 
+    // Navigate/Orbit/Satellite's shared look-offset only re-centers
+    // while you're actively driving/flying in that mode and not
+    // currently holding the free-look button — otherwise it's sticky.
+    if (!freeLookDragging.current && (manualActive || satPanning)) {
+      const r = Math.min(1, delta * LOOK_RECENTER_RATE);
+      s.lookOffsetYaw += (0 - s.lookOffsetYaw) * r;
+      s.lookOffsetPitch += (0 - s.lookOffsetPitch) * r;
+    }
+
     // camera: building focus always wins; otherwise the active mode
     let wantPos: THREE.Vector3;
     let wantLook: THREE.Vector3;
@@ -556,10 +640,17 @@ export function Player({
         height,
         s.pos.z + Math.cos(s.orbitYaw) * radius
       );
-      wantLook = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+      const baseTarget = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+      wantLook = applyLookOffset(
+        wantPos,
+        baseTarget,
+        s.lookOffsetYaw,
+        s.lookOffsetPitch,
+        CHASE_PITCH_LIMIT
+      );
     } else if (viewMode === "drone") {
-      if (!freeLookDragging.current) {
-        // ease back to facing the flight heading once the button is released
+      if (!freeLookDragging.current && droneFlying) {
+        // ease back to facing the flight heading while actively piloting
         const recenter = Math.min(1, delta * LOOK_RECENTER_RATE);
         let dh = s.droneYaw - s.droneLookYaw;
         while (dh > Math.PI) dh -= Math.PI * 2;
@@ -578,11 +669,18 @@ export function Player({
       lerpBase = 0.00004; // snappy, first-person-adjacent piloting feel
     } else if (viewMode === "satellite") {
       wantPos = new THREE.Vector3(s.satPos.x, s.satAlt, s.satPos.z + 0.01);
-      wantLook = new THREE.Vector3(s.satPos.x, 0, s.satPos.z);
+      const baseTarget = new THREE.Vector3(s.satPos.x, 0, s.satPos.z);
+      wantLook = applyLookOffset(
+        wantPos,
+        baseTarget,
+        s.lookOffsetYaw,
+        s.lookOffsetPitch,
+        CHASE_PITCH_LIMIT
+      );
       lerpBase = 0.0008;
     } else if (viewMode === "pov") {
-      if (!freeLookDragging.current) {
-        // ease back to facing the direction of travel once released
+      if (!freeLookDragging.current && manualActive) {
+        // ease back to facing the direction of travel while actively driving
         const recenter = Math.min(1, delta * LOOK_RECENTER_RATE);
         let dh = s.heading - s.povLookYaw;
         while (dh > Math.PI) dh -= Math.PI * 2;
@@ -601,7 +699,14 @@ export function Player({
       lerpBase = 0.00004; // snappier — first-person lag reads as laggy input
     } else {
       wantPos = s.pos.clone().add(CAM_OFFSET.clone().multiplyScalar(s.zoom));
-      wantLook = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+      const baseTarget = new THREE.Vector3(s.pos.x, 1, s.pos.z);
+      wantLook = applyLookOffset(
+        wantPos,
+        baseTarget,
+        s.lookOffsetYaw,
+        s.lookOffsetPitch,
+        CHASE_PITCH_LIMIT
+      );
     }
 
     const lerpK = 1 - Math.pow(lerpBase, delta); // framerate-independent lerp
@@ -609,6 +714,14 @@ export function Player({
     s.camLook.lerp(wantLook, lerpK);
     camera.position.copy(s.camPos);
     camera.lookAt(s.camLook);
+
+    // Street View field-of-view zoom; every other mode holds the default
+    const perspCam = camera as THREE.PerspectiveCamera;
+    const targetFov = viewMode === "pov" ? s.povFov : DEFAULT_FOV;
+    if (Math.abs(perspCam.fov - targetFov) > 0.01) {
+      perspCam.fov += (targetFov - perspCam.fov) * Math.min(1, delta * FOV_EASE_RATE);
+      perspCam.updateProjectionMatrix();
+    }
   });
 
   return (

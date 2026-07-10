@@ -11,6 +11,7 @@ import {
   clampToWalkable,
   EXTENT,
   STREET_HALF,
+  SIDEWALK_WIDTH,
   type BuildingDef,
   type KioskDef,
 } from "./layout-data";
@@ -18,6 +19,7 @@ import {
   createFacadeTextures,
   createGroundTexture,
   createRoadTexture,
+  createSidewalkTexture,
 } from "./textures";
 
 /* ---------------- ground + streets ---------------- */
@@ -40,6 +42,19 @@ export function Ground() {
     t.center.set(0.5, 0.5);
     return t;
   }, [roadTex]);
+  const sidewalkTex = useMemo(() => createSidewalkTexture(), []);
+  const sidewalkLong = useMemo(() => {
+    const t = sidewalkTex.clone();
+    t.needsUpdate = true;
+    t.repeat.set((EXTENT * 2) / 3, SIDEWALK_WIDTH / 2.4);
+    return t;
+  }, [sidewalkTex]);
+  const sidewalkCross = useMemo(() => {
+    const t = sidewalkTex.clone();
+    t.needsUpdate = true;
+    t.repeat.set(SIDEWALK_WIDTH / 2.4, (EXTENT * 2) / 3);
+    return t;
+  }, [sidewalkTex]);
 
   function onClick(e: ThreeEvent<MouseEvent>) {
     e.stopPropagation();
@@ -66,6 +81,40 @@ export function Ground() {
       >
         <planeGeometry args={[STREET_HALF * 2, EXTENT * 2]} />
         <meshStandardMaterial map={crossTex} roughness={0.9} transparent />
+      </mesh>
+      {/* sidewalks flanking the main street */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.008, STREET_HALF + SIDEWALK_WIDTH / 2]}
+        onClick={onClick}
+      >
+        <planeGeometry args={[EXTENT * 2, SIDEWALK_WIDTH]} />
+        <meshStandardMaterial map={sidewalkLong} roughness={0.95} />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[0, 0.008, -(STREET_HALF + SIDEWALK_WIDTH / 2)]}
+        onClick={onClick}
+      >
+        <planeGeometry args={[EXTENT * 2, SIDEWALK_WIDTH]} />
+        <meshStandardMaterial map={sidewalkLong} roughness={0.95} />
+      </mesh>
+      {/* sidewalks flanking the cross street */}
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[STREET_HALF + SIDEWALK_WIDTH / 2, 0.009, 0]}
+        onClick={onClick}
+      >
+        <planeGeometry args={[SIDEWALK_WIDTH, EXTENT * 2]} />
+        <meshStandardMaterial map={sidewalkCross} roughness={0.95} />
+      </mesh>
+      <mesh
+        rotation={[-Math.PI / 2, 0, 0]}
+        position={[-(STREET_HALF + SIDEWALK_WIDTH / 2), 0.009, 0]}
+        onClick={onClick}
+      >
+        <planeGeometry args={[SIDEWALK_WIDTH, EXTENT * 2]} />
+        <meshStandardMaterial map={sidewalkCross} roughness={0.95} />
       </mesh>
     </group>
   );

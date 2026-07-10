@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Stars } from "@react-three/drei";
@@ -12,6 +12,13 @@ import { Rain } from "./rain";
 import { Park } from "./park";
 import { StreetSigns } from "./street-signs";
 import { GithubBuilding } from "./github-building";
+import { Traffic } from "./traffic";
+import { createGlowTexture } from "./textures";
+
+// Same direction the "sun" directional light shines from, pushed out
+// to skybox distance so the visible disc lines up with the light.
+const SUN_DIR = new THREE.Vector3(30, 45, 20).normalize();
+const SUN_DISTANCE = 160;
 
 const DAY_SKY = new THREE.Color("#8db4dd");
 const NIGHT_SKY = new THREE.Color("#060a12");
@@ -63,8 +70,52 @@ function Environment() {
       <directionalLight ref={sun} position={[30, 45, 20]} intensity={2.4} />
       {/* faint constant fill so night is never pitch black */}
       <ambientLight intensity={0.12} color="#334866" />
+      <Sun />
       <NightStars />
     </>
+  );
+}
+
+/** Visible sun disc + soft halo, fading out as the sky turns to night. */
+function Sun() {
+  const { nightT } = useCity();
+  const diskMat = useRef<THREE.MeshBasicMaterial>(null);
+  const haloMat = useRef<THREE.SpriteMaterial>(null);
+  const glowTex = useMemo(() => createGlowTexture(), []);
+  const position = useMemo(
+    () => SUN_DIR.clone().multiplyScalar(SUN_DISTANCE).toArray(),
+    []
+  );
+
+  useFrame(() => {
+    const opacity = Math.max(0, 1 - nightT.current * 1.6);
+    if (diskMat.current) diskMat.current.opacity = opacity;
+    if (haloMat.current) haloMat.current.opacity = opacity * 0.9;
+  });
+
+  return (
+    <group position={position as [number, number, number]}>
+      <mesh raycast={() => null}>
+        <sphereGeometry args={[9, 20, 20]} />
+        <meshBasicMaterial
+          ref={diskMat}
+          color="#fff3d0"
+          transparent
+          toneMapped={false}
+        />
+      </mesh>
+      <sprite scale={[46, 46, 1]} raycast={() => null}>
+        <spriteMaterial
+          ref={haloMat}
+          map={glowTex}
+          color="#ffdf9e"
+          transparent
+          depthWrite={false}
+          blending={THREE.AdditiveBlending}
+          toneMapped={false}
+        />
+      </sprite>
+    </group>
   );
 }
 
@@ -134,6 +185,7 @@ export function CityScene({
       <StreetSigns />
       <GithubBuilding />
       <Park />
+      <Traffic />
       <Nila />
       <Player onTourStop={onTourStop} />
       <Rain />

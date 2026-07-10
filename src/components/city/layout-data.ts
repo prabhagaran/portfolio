@@ -8,6 +8,7 @@ import { projects, type Project } from "@/data/projects";
 export const STREET_HALF = 4.5; // half-width of a street corridor
 export const EXTENT = 42; // streets run from -EXTENT to +EXTENT
 export const PLAZA_HALF = 11; // central plaza half-size
+export const SIDEWALK_WIDTH = 2.4; // grey strip flanking each street
 
 export const SPAWN: [number, number] = [0, 18];
 

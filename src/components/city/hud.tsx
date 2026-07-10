@@ -535,8 +535,12 @@ function InfoPanels() {
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
-              In Street View or Drone View, hold the right mouse button and
-              drag to free-look — it eases back when you let go.
+              Hold the right mouse button and drag to free-look — works in
+              every mode but Guided Tour, and stays where you leave it.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              In Street View, scroll to zoom in and out.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
@@ -789,8 +793,8 @@ export function CityHud({
       {/* bottom-left hint / bottom-right minimap */}
       <div className="absolute bottom-4 left-4 hidden max-w-[280px] space-y-1 rounded-card border border-line bg-surface/85 px-3.5 py-2.5 font-mono text-[11px] leading-relaxed text-muted shadow-card backdrop-blur-sm sm:block">
         <p>Click the street to move · or drive it like a car (WASD/arrows)</p>
-        <p>Scroll to zoom/altitude · drag to Orbit · V toggles Street View</p>
-        <p>Right-click + drag to free-look in Street/Drone View</p>
+        <p>Scroll to zoom/altitude · left-drag to Orbit · V toggles Street View</p>
+        <p>Right-click + drag to free-look anywhere · scroll zooms Street View</p>
       </div>
       <div className="absolute bottom-4 right-4">
         <Minimap />

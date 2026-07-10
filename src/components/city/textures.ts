@@ -12,12 +12,12 @@ function makeCanvas(size: number) {
   return { canvas, ctx: canvas.getContext("2d")! };
 }
 
-/** Dark ground with a faint engineering grid. */
+/** Open ground beyond the streets/sidewalks: PCB solder-mask green. */
 export function createGroundTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = makeCanvas(256);
-  ctx.fillStyle = "#0d1420";
+  ctx.fillStyle = "#123d27";
   ctx.fillRect(0, 0, 256, 256);
-  ctx.strokeStyle = "rgba(148,163,184,0.06)";
+  ctx.strokeStyle = "rgba(255,255,255,0.045)";
   ctx.lineWidth = 1;
   for (let i = 0; i <= 256; i += 32) {
     ctx.beginPath();
@@ -36,48 +36,24 @@ export function createGroundTexture(): THREE.CanvasTexture {
   return tex;
 }
 
-/** Street surface: graphite with copper circuit traces and vias. */
+/** Street surface: plain asphalt with a dashed white center stripe. */
 export function createRoadTexture(): THREE.CanvasTexture {
   const { canvas, ctx } = makeCanvas(512);
-  ctx.fillStyle = "#131a26";
+  ctx.fillStyle = "#17191c";
   ctx.fillRect(0, 0, 512, 512);
 
-  // copper traces run along the street (x axis of the texture)
-  const lanes = [80, 160, 256, 352, 432];
-  ctx.strokeStyle = "rgba(217,119,6,0.55)";
-  ctx.lineWidth = 4;
-  for (const y of lanes) {
+  // faint asphalt grain
+  ctx.strokeStyle = "rgba(255,255,255,0.02)";
+  ctx.lineWidth = 1;
+  for (let y = 0; y < 512; y += 22) {
     ctx.beginPath();
     ctx.moveTo(0, y);
-    let x = 0;
-    let cy = y;
-    while (x < 512) {
-      const seg = 60 + ((x * 7919 + y) % 80);
-      x = Math.min(512, x + seg);
-      ctx.lineTo(x, cy);
-      if (x < 480 && (x + y) % 3 === 0) {
-        const jog = ((x + y) % 2 === 0 ? 1 : -1) * 24;
-        cy = Math.max(32, Math.min(480, cy + jog));
-        ctx.lineTo(x + 24, cy);
-        x += 24;
-      }
-    }
+    ctx.lineTo(512, y);
     ctx.stroke();
   }
-  // vias
-  for (let i = 0; i < 40; i++) {
-    const x = (i * 977) % 512;
-    const y = lanes[i % lanes.length];
-    ctx.beginPath();
-    ctx.arc(x, y, 6, 0, Math.PI * 2);
-    ctx.fillStyle = "#0d1420";
-    ctx.fill();
-    ctx.strokeStyle = "rgba(217,119,6,0.8)";
-    ctx.lineWidth = 3;
-    ctx.stroke();
-  }
-  // center dashed lane divider (electric blue)
-  ctx.strokeStyle = "rgba(59,130,246,0.7)";
+
+  // dashed white center line
+  ctx.strokeStyle = "rgba(245,245,245,0.9)";
   ctx.lineWidth = 5;
   ctx.setLineDash([28, 22]);
   ctx.beginPath();
@@ -86,6 +62,41 @@ export function createRoadTexture(): THREE.CanvasTexture {
   ctx.stroke();
   ctx.setLineDash([]);
 
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+/** Soft radial glow — used for the sun's halo sprite. */
+export function createGlowTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = makeCanvas(128);
+  const grad = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
+  grad.addColorStop(0, "rgba(255,255,255,1)");
+  grad.addColorStop(0.35, "rgba(255,223,158,0.55)");
+  grad.addColorStop(1, "rgba(255,223,158,0)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(canvas);
+}
+
+/** Sidewalk: grey concrete slabs with expansion joints. */
+export function createSidewalkTexture(): THREE.CanvasTexture {
+  const { canvas, ctx } = makeCanvas(128);
+  ctx.fillStyle = "#7d848c";
+  ctx.fillRect(0, 0, 128, 128);
+  ctx.strokeStyle = "rgba(0,0,0,0.22)";
+  ctx.lineWidth = 2;
+  for (let i = 0; i <= 128; i += 32) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, 128);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, i);
+    ctx.lineTo(128, i);
+    ctx.stroke();
+  }
   const tex = new THREE.CanvasTexture(canvas);
   tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
   tex.colorSpace = THREE.SRGBColorSpace;
