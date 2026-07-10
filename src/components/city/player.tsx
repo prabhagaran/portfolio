@@ -45,6 +45,16 @@ const SAT_DEFAULT_ALT = 55;
 // Guided tour
 const TOUR_DWELL = 4.5; // seconds per stop
 
+// Free look (Street View / Drone View): hold right mouse button and
+// drag to look around; releasing eases the camera back to facing
+// the direction of travel.
+const LOOK_SPEED = 0.0055;
+const LOOK_RECENTER_RATE = 6; // higher = snaps back faster when released
+const POV_PITCH_LIMIT = 1.1;
+const DRONE_PITCH_LIMIT_UP = 0.6;
+const DRONE_PITCH_LIMIT_DOWN = -1.3;
+const DRONE_DEFAULT_PITCH = -0.25;
+
 // Car-style controls: up/down throttle forward/reverse along the
 // current heading, left/right steer — nothing snaps sideways. In
 // Drone View the same four keys fly the camera instead of the rover;
@@ -130,7 +140,15 @@ export function Player({
     satAlt: SAT_DEFAULT_ALT,
     tourIndex: 0,
     tourT: 0,
+    povLookYaw: Math.PI,
+    povLookPitch: 0,
+    droneLookYaw: Math.PI,
+    droneLookPitch: DRONE_DEFAULT_PITCH,
   });
+
+  // true while the right mouse button is held and dragging — read
+  // inside useFrame to decide whether to auto-recenter the look angles
+  const freeLookDragging = useRef(false);
 
   // keyboard state — refs so held keys don't trigger re-renders
   const keys = useRef({ forward: false, reverse: false, left: false, right: false });
@@ -179,7 +197,12 @@ export function Player({
     if (viewMode === "drone") {
       s.dronePos.copy(s.camPos);
       s.droneYaw = s.heading;
+      s.droneLookYaw = s.heading;
+      s.droneLookPitch = DRONE_DEFAULT_PITCH;
       s.droneAlt = THREE.MathUtils.clamp(s.camPos.y, DRONE_ALT_MIN, DRONE_ALT_MAX);
+    } else if (viewMode === "pov") {
+      s.povLookYaw = s.heading;
+      s.povLookPitch = 0;
     } else if (viewMode === "satellite") {
       s.satPos.set(s.pos.x, 0, s.pos.z);
     } else if (viewMode === "tour") {
@@ -284,6 +307,61 @@ export function Player({
       el.removeEventListener("pointerdown", onDown);
       window.removeEventListener("pointermove", onMove);
       window.removeEventListener("pointerup", onUp);
+    };
+  }, [gl]);
+
+  // free look: hold the right mouse button and drag, only in Street
+  // View / Drone View — suppress the browser context menu on the
+  // canvas so a right-click drags instead of opening a menu
+  useEffect(() => {
+    const el = gl.domElement;
+    let lastX = 0;
+    let lastY = 0;
+    const onDown = (e: PointerEvent) => {
+      if (e.button !== 2) return;
+      const vm = viewModeRef.current;
+      if (vm !== "pov" && vm !== "drone") return;
+      freeLookDragging.current = true;
+      lastX = e.clientX;
+      lastY = e.clientY;
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!freeLookDragging.current) return;
+      const dx = e.clientX - lastX;
+      const dy = e.clientY - lastY;
+      lastX = e.clientX;
+      lastY = e.clientY;
+      const s = state.current;
+      const vm = viewModeRef.current;
+      if (vm === "pov") {
+        s.povLookYaw -= dx * LOOK_SPEED;
+        s.povLookPitch = THREE.MathUtils.clamp(
+          s.povLookPitch - dy * LOOK_SPEED,
+          -POV_PITCH_LIMIT,
+          POV_PITCH_LIMIT
+        );
+      } else if (vm === "drone") {
+        s.droneLookYaw -= dx * LOOK_SPEED;
+        s.droneLookPitch = THREE.MathUtils.clamp(
+          s.droneLookPitch - dy * LOOK_SPEED,
+          DRONE_PITCH_LIMIT_DOWN,
+          DRONE_PITCH_LIMIT_UP
+        );
+      }
+    };
+    const onUp = (e: PointerEvent) => {
+      if (e.button === 2) freeLookDragging.current = false;
+    };
+    const onContextMenu = (e: MouseEvent) => e.preventDefault();
+    el.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    el.addEventListener("contextmenu", onContextMenu);
+    return () => {
+      el.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      el.removeEventListener("contextmenu", onContextMenu);
     };
   }, [gl]);
 
@@ -480,12 +558,22 @@ export function Player({
       );
       wantLook = new THREE.Vector3(s.pos.x, 1, s.pos.z);
     } else if (viewMode === "drone") {
+      if (!freeLookDragging.current) {
+        // ease back to facing the flight heading once the button is released
+        const recenter = Math.min(1, delta * LOOK_RECENTER_RATE);
+        let dh = s.droneYaw - s.droneLookYaw;
+        while (dh > Math.PI) dh -= Math.PI * 2;
+        while (dh < -Math.PI) dh += Math.PI * 2;
+        s.droneLookYaw += dh * recenter;
+        s.droneLookPitch += (DRONE_DEFAULT_PITCH - s.droneLookPitch) * recenter;
+      }
       wantPos = s.dronePos.clone();
+      const cosPitch = Math.cos(s.droneLookPitch);
       const lookDir = new THREE.Vector3(
-        Math.sin(s.droneYaw),
-        -0.25,
-        Math.cos(s.droneYaw)
-      ).normalize();
+        Math.sin(s.droneLookYaw) * cosPitch,
+        Math.sin(s.droneLookPitch),
+        Math.cos(s.droneLookYaw) * cosPitch
+      );
       wantLook = wantPos.clone().addScaledVector(lookDir, 10);
       lerpBase = 0.00004; // snappy, first-person-adjacent piloting feel
     } else if (viewMode === "satellite") {
@@ -493,8 +581,22 @@ export function Player({
       wantLook = new THREE.Vector3(s.satPos.x, 0, s.satPos.z);
       lerpBase = 0.0008;
     } else if (viewMode === "pov") {
+      if (!freeLookDragging.current) {
+        // ease back to facing the direction of travel once released
+        const recenter = Math.min(1, delta * LOOK_RECENTER_RATE);
+        let dh = s.heading - s.povLookYaw;
+        while (dh > Math.PI) dh -= Math.PI * 2;
+        while (dh < -Math.PI) dh += Math.PI * 2;
+        s.povLookYaw += dh * recenter;
+        s.povLookPitch += (0 - s.povLookPitch) * recenter;
+      }
       wantPos = new THREE.Vector3(s.pos.x, EYE_HEIGHT, s.pos.z);
-      const lookDir = new THREE.Vector3(Math.sin(s.heading), 0, Math.cos(s.heading));
+      const cosPitch = Math.cos(s.povLookPitch);
+      const lookDir = new THREE.Vector3(
+        Math.sin(s.povLookYaw) * cosPitch,
+        Math.sin(s.povLookPitch),
+        Math.cos(s.povLookYaw) * cosPitch
+      );
       wantLook = wantPos.clone().addScaledVector(lookDir, 8);
       lerpBase = 0.00004; // snappier — first-person lag reads as laggy input
     } else {
