@@ -71,6 +71,18 @@ export const NILA_POS: [number, number] = [4, 15];
 /** Small park in the otherwise-unused southwest quadrant (easter egg). */
 export const PARK_POS: [number, number] = [-22, 22];
 
+/**
+ * GitHub data tower — a landmark building whose facade renders the real
+ * contribution graph. Sits on the `south(30)` slot, the one grid position
+ * the 7-project/7-placement cycle above never assigns to a project.
+ */
+export const GITHUB_BUILDING = {
+  position: [30, 11] as [number, number],
+  doorstep: [30, 3.5] as [number, number],
+  rotationY: Math.PI,
+  size: [11, 21, 9] as [number, number, number],
+};
+
 /* ---------- walkable-area math (streets + plaza) ---------- */
 
 interface Rect {

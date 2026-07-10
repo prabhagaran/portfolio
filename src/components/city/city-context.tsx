@@ -2,8 +2,9 @@
 
 import { createContext, useContext, type MutableRefObject } from "react";
 import type { Project } from "@/data/projects";
+import type { ContribData } from "./github-data";
 
-export type PanelId = "about" | "contact" | "resume" | "nila" | "park" | null;
+export type PanelId = "about" | "contact" | "resume" | "nila" | "park" | "github" | null;
 
 export type Weather = "clear" | "rain";
 
@@ -23,6 +24,8 @@ export interface CityState {
   setSelected: (p: Project | null) => void;
   panel: PanelId;
   setPanel: (p: PanelId) => void;
+  /** Real contribution history for the GitHub data tower; null while loading/unavailable */
+  githubData: ContribData | null;
 
   /** Mutable per-frame state (never triggers React renders) */
   nightT: MutableRefObject<number>; // lerped 0 (day) → 1 (night)

@@ -11,6 +11,7 @@ import { Nila } from "./nila";
 import { Rain } from "./rain";
 import { Park } from "./park";
 import { StreetSigns } from "./street-signs";
+import { GithubBuilding } from "./github-building";
 
 const DAY_SKY = new THREE.Color("#8db4dd");
 const NIGHT_SKY = new THREE.Color("#060a12");
@@ -125,6 +126,7 @@ export function CityScene({ onLowFps }: { onLowFps: () => void }) {
       <Kiosks />
       <Streetlights />
       <StreetSigns />
+      <GithubBuilding />
       <Park />
       <Nila />
       <Player />

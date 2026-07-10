@@ -23,8 +23,17 @@ import { Badge } from "@/components/ui/badge";
 import { setStoredMode } from "@/lib/mode";
 import { site, stats } from "@/data/site";
 import type { ProjectStatus } from "@/data/projects";
+import { LEVEL_COLORS } from "./github-data";
 import { useCity } from "./city-context";
-import { buildings, kiosks, EXTENT, NILA_POS, PARK_POS, STREET_HALF } from "./layout-data";
+import {
+  buildings,
+  kiosks,
+  EXTENT,
+  GITHUB_BUILDING,
+  NILA_POS,
+  PARK_POS,
+  STREET_HALF,
+} from "./layout-data";
 
 const statusTone: Record<ProjectStatus, "blue" | "emerald" | "amber" | "neutral"> = {
   Production: "emerald",
@@ -112,6 +121,19 @@ function Minimap() {
       <div
         className="absolute h-[6px] w-[6px] rounded-full bg-[#2f6f4f]"
         style={{ left: toMap(PARK_POS[0]) - 3, top: toMap(PARK_POS[1]) - 3 }}
+      />
+      {/* GitHub tower */}
+      <div
+        title="GitHub"
+        className="absolute rounded-[2px]"
+        style={{
+          left: toMap(GITHUB_BUILDING.position[0] - GITHUB_BUILDING.size[0] / 2),
+          top: toMap(GITHUB_BUILDING.position[1] - GITHUB_BUILDING.size[2] / 2),
+          width: (GITHUB_BUILDING.size[0] * MAP) / (WORLD * 2),
+          height: (GITHUB_BUILDING.size[2] * MAP) / (WORLD * 2),
+          background: "#63a9ff",
+          opacity: 0.9,
+        }}
       />
       {/* player */}
       <div
@@ -223,6 +245,52 @@ function ProjectPanel() {
   );
 }
 
+function GithubPanel({ onClose }: { onClose: () => void }) {
+  const { githubData } = useCity();
+  return (
+    <Panel title="GitHub — Data Tower" onClose={onClose}>
+      <p className="text-sm leading-relaxed text-muted">
+        Every window on this tower is a real day from my GitHub contribution
+        history — brighter windows near the roofline mean more recent
+        activity, dim ones near the base are further back in the year.
+      </p>
+      {githubData ? (
+        <div className="mt-5 grid grid-cols-2 gap-3">
+          <div className="rounded-card border border-line bg-surface-2 p-3 text-center">
+            <p className="text-xl font-semibold text-slate-50">
+              {githubData.total.toLocaleString()}
+            </p>
+            <p className="mt-0.5 text-xs text-muted">Contributions / year</p>
+          </div>
+          <div className="rounded-card border border-line bg-surface-2 p-3 text-center">
+            <p className="text-xl font-semibold text-slate-50">{githubData.days.length}</p>
+            <p className="mt-0.5 text-xs text-muted">Days tracked</p>
+          </div>
+        </div>
+      ) : (
+        <p className="mt-5 text-xs text-faint">Loading live contribution data…</p>
+      )}
+      <div className="mt-5 flex items-center gap-2 border-t border-line pt-4 font-mono text-[10px] text-faint">
+        <span>Less</span>
+        {LEVEL_COLORS.map((c) => (
+          <span key={c} className="h-[10px] w-[10px] rounded-[2px]" style={{ background: c }} />
+        ))}
+        <span>More</span>
+      </div>
+      <a
+        href={site.githubUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-5 inline-flex h-9 items-center gap-2 rounded-[10px] border border-line px-4 text-sm text-slate-200 transition-colors duration-200 hover:border-accent/60 hover:text-white"
+      >
+        <FaGithub className="h-4 w-4" aria-hidden="true" />
+        View full profile
+        <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+      </a>
+    </Panel>
+  );
+}
+
 function InfoPanels() {
   const { panel, setPanel } = useCity();
   const close = () => setPanel(null);
@@ -298,6 +366,7 @@ function InfoPanels() {
           </a>
         </Panel>
       )}
+      {panel === "github" && <GithubPanel onClose={close} />}
       {panel === "park" && (
         <Panel title="Off the clock" onClose={close}>
           <p className="text-sm leading-relaxed text-muted">
@@ -347,6 +416,10 @@ function InfoPanels() {
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
               The plaza kiosks cover About, Contact, and Resume.
+            </li>
+            <li className="flex gap-2.5">
+              <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />
+              The tall tower is my real GitHub activity — each window is a day.
             </li>
             <li className="flex gap-2.5">
               <span className="mt-[9px] h-1 w-3 shrink-0 rounded-full bg-accent" />

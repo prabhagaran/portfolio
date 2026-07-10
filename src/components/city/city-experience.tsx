@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Project } from "@/data/projects";
 import { CityContext, type PanelId, type ViewMode, type Weather } from "./city-context";
 import { CitySoundscape } from "./audio";
+import { type ContribData, fetchContributions } from "./github-data";
 import { CityScene } from "./scene";
 import { CityHud } from "./hud";
+import { site } from "@/data/site";
 
 const rollWeather = (): Weather => (Math.random() < 0.55 ? "rain" : "clear");
 
@@ -30,6 +32,7 @@ export function CityExperience() {
   const [selected, setSelectedState] = useState<Project | null>(null);
   const [panel, setPanelState] = useState<PanelId>(null);
   const [perfWarn, setPerfWarn] = useState(false);
+  const [githubData, setGithubData] = useState<ContribData | null>(null);
 
   const nightT = useRef(night ? 1 : 0);
   const rainT = useRef(0);
@@ -75,6 +78,17 @@ export function CityExperience() {
     };
   }, []);
 
+  // fetch once — powers the GitHub data tower's window grid
+  useEffect(() => {
+    let cancelled = false;
+    fetchContributions(site.github).then((data) => {
+      if (!cancelled) setGithubData(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // Opening a project closes any kiosk panel and vice versa.
   const setSelected = useCallback((p: Project | null) => {
     setSelectedState(p);
@@ -98,6 +112,7 @@ export function CityExperience() {
       setSelected,
       panel,
       setPanel,
+      githubData,
       nightT,
       rainT,
       playerPos,
@@ -115,6 +130,7 @@ export function CityExperience() {
       setSelected,
       panel,
       setPanel,
+      githubData,
     ]
   );
 
