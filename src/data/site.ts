@@ -6,7 +6,7 @@ export const site = {
   name: "Prabhagaran Sundaralingam",
   role: "Hardware Design Engineer",
   tagline:
-    "I design reliable hardware and embedded systems for Battery Energy Storage Systems, transforming engineering concepts into production-ready electronics.",
+    "Transforming ideas into production-ready electronics through hardware design, PCB development, system integration, and validation.",
   location: "Chennai, India",
   email: "prabhasurya146@gmail.com",
   github: "prabhagaran",
@@ -46,28 +46,43 @@ export const philosophy = [
 
 export const careerTimeline = [
   {
+    year: "2018",
+    title: "Teckcraft",
+    detail: "Educational kit designed to introduce young minds to hands-on engineering.",
+  },
+  {
+    year: "2019",
+    title: "EMON",
+    detail: "Device for monitoring devices.",
+  },
+  {
     year: "2021",
-    title: "Started in embedded hardware",
-    detail: "First production PCB shipped — a sensor interface board for industrial monitoring.",
+    title: "Tiles",
+    detail: "Trainer kit for children with autism.",
   },
   {
     year: "2022",
-    title: "Moved into battery systems",
-    detail: "Designed first BMS slave board: 16-cell monitoring with passive balancing.",
+    title: "Interactive Robotics for Autism",
+    detail: "Interactive robotics platform built to support autism therapy.",
   },
   {
     year: "2023",
-    title: "BESS at rack scale",
-    detail: "Led hardware for a rack-level monitoring system — CAN backbone, isolated measurement, safety interlocks.",
+    title: "Harness Selector",
+    detail: "Tool for selecting the right wiring harness for a given configuration.",
   },
   {
     year: "2024",
-    title: "System architecture",
-    detail: "Owned architecture for a containerized BESS controller: from cell sensing to cloud telemetry.",
+    title: "BMS",
+    detail: "Designed battery management system hardware.",
   },
   {
     year: "2025",
-    title: "Digital twins & tooling",
-    detail: "Building battery digital twins and internal engineering tools that shorten validation cycles.",
+    title: "Falcon",
+    detail: "Falcon project.",
+  },
+  {
+    year: "2026",
+    title: "BMS104/52",
+    detail: "Next-generation BMS variants — BMS104 and BMS52.",
   },
 ];

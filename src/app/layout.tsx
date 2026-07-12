@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ChromeNavbar, ChromeFooter } from "@/components/chrome";
+import { CursorEffects } from "@/components/cursor-effects";
 import { site } from "@/data/site";
 import "./globals.css";
 
@@ -45,6 +46,7 @@ export default function RootLayout({
         >
           Skip to content
         </a>
+        <CursorEffects />
         <ChromeNavbar />
         <div id="main" className="flex-1">
           {children}

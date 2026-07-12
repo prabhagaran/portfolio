@@ -97,7 +97,6 @@ export function Hero() {
           <span>BMS · BESS</span>
           <span>Embedded Systems</span>
           <span>PCB Design</span>
-          <span>Cell → Cloud</span>
         </motion.div>
       </div>
     </section>

@@ -10,7 +10,7 @@ export interface Project {
   demo?: string;
   docs?: string;
   /** Which generated schematic-style visual to render on the card */
-  visual: "twin" | "rack" | "cell" | "calculator" | "incubator" | "can" | "dashboard";
+  visual: "twin" | "rack" | "incubator" | "can" | "dashboard" | "rc" | "modbus";
 }
 
 export const projects: Project[] = [
@@ -21,71 +21,48 @@ export const projects: Project[] = [
       "Physics-informed digital twin of a lithium-ion pack. Runs an equivalent-circuit model in real time against live telemetry to predict SoC drift, thermal behavior, and degradation.",
     tags: ["Python", "ECM Modeling", "MQTT", "TimescaleDB", "Grafana"],
     status: "Active",
-    github: "https://github.com/prabhagaran/battery-digital-twin",
+    github: "https://github.com/prabhagaran/battery-rack-digital-twin",
     docs: "/blog/soc-estimation-kalman",
     visual: "twin",
   },
   {
-    slug: "battery-rack-monitoring",
-    name: "Battery Rack Monitoring",
+    slug: "invento",
+    name: "Invento",
     description:
-      "Rack-level BESS monitoring hardware: isolated voltage/temperature acquisition across 416 cells, CAN-FD backbone, and a hardened STM32 supervisor with hardware interlocks.",
-    tags: ["STM32", "CAN-FD", "Altium", "Isolated ADC", "IEC 61508"],
-    status: "Production",
-    github: "https://github.com/prabhagaran/battery-rack-monitor",
-    docs: "/blog/hv-pcb-creepage",
+      "BESS simulation tool for modeling rack-level battery behavior — configurable pack topology, load profiles, and electrical/thermal simulation for validating a design before hardware exists.",
+    tags: ["Python", "Simulation", "BESS", "Modeling"],
+    status: "Active",
+    github: "https://github.com/prabhagaran/invento",
     visual: "rack",
   },
   {
-    slug: "battery-cell-monitoring-board",
-    name: "Battery Cell Monitoring Board",
+    slug: "egg-incubator",
+    name: "Egg Incubator",
     description:
-      "16-cell monitoring PCB built around a battery monitor AFE with passive balancing, daisy-chained isoSPI, and ±2 mV measurement accuracy across the automotive temperature range.",
-    tags: ["Altium", "AFE", "isoSPI", "Passive Balancing", "4-layer PCB"],
-    status: "Production",
-    github: "https://github.com/prabhagaran/cell-monitor-board",
-    docs: "/blog/cell-balancing-strategies",
-    visual: "cell",
-  },
-  {
-    slug: "battery-pack-calculator",
-    name: "Battery Pack Calculator",
-    description:
-      "Interactive tool for sizing series/parallel pack configurations — energy, C-rate, busbar current, cable gauge, and BMS channel count from a cell datasheet input.",
-    tags: ["TypeScript", "Next.js", "React", "Engineering Tools"],
-    status: "Open Source",
-    github: "https://github.com/prabhagaran/battery-pack-calculator",
-    visual: "calculator",
-  },
-  {
-    slug: "open-source-incubator",
-    name: "Open Source Incubator",
-    description:
-      "A curated launchpad for open hardware projects: reference schematics, firmware templates, and CI pipelines that take a board from idea to fab-ready release.",
-    tags: ["KiCad", "GitHub Actions", "Firmware Templates", "Docs"],
-    status: "Open Source",
-    github: "https://github.com/prabhagaran/open-source-incubator",
+      "ESP32 + FreeRTOS controlled egg incubator: closed-loop temperature and humidity regulation, automatic egg turning, and a task-based RTOS architecture for reliable multi-day operation.",
+    tags: ["ESP32", "FreeRTOS", "Embedded C", "PID Control"],
+    status: "Prototype",
+    github: "https://github.com/prabhagaran/egg-incubator-esp32-rtos",
     visual: "incubator",
   },
   {
-    slug: "can-data-analyzer",
-    name: "CAN Data Analyzer",
+    slug: "rc-truck",
+    name: "RC Truck",
     description:
-      "Desktop-grade CAN/CAN-FD analysis in the browser: DBC decoding, signal plotting, bus-load statistics, and anomaly flagging for multi-megabyte log files.",
-    tags: ["Python", "DBC", "CAN-FD", "Signal Processing"],
-    status: "Active",
-    github: "https://github.com/prabhagaran/can-data-analyzer",
-    docs: "/blog/can-bus-debugging",
-    visual: "can",
+      "Arduino-based RC receiver for a hobby truck build — PWM channel decoding, failsafe on signal loss, and throttle/steering mixing driving the motor and servo outputs.",
+    tags: ["Arduino", "RC", "PWM", "Embedded C"],
+    status: "Prototype",
+    github: "https://github.com/prabhagaran/rc-receiver-arduino",
+    visual: "rc",
   },
   {
-    slug: "battery-testing-dashboard",
-    name: "Battery Testing Dashboard",
+    slug: "modtool",
+    name: "Modtool",
     description:
-      "Full-stack dashboard for cell cycling labs: live charge/discharge curves, capacity fade tracking, and automated test-report generation across parallel channels.",
-    tags: ["Node.js", "Fastify", "PostgreSQL", "Redis", "Grafana"],
-    status: "Prototype",
-    github: "https://github.com/prabhagaran/battery-testing-dashboard",
-    visual: "dashboard",
+      "Command-line tool for reading and writing Modbus registers — a lightweight utility for debugging and commissioning Modbus RTU/TCP devices in the field.",
+    tags: ["Python", "Modbus", "RTU/TCP", "CLI Tool"],
+    status: "Open Source",
+    github: "https://github.com/prabhagaran/modtool_py",
+    visual: "modbus",
   },
 ];

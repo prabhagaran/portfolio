@@ -72,55 +72,6 @@ const visuals: Record<Project["visual"], React.ReactNode> = {
       <text x="90" y="180" fill={LINE} fontSize="10" fontFamily="monospace">RACK 416S</text>
     </g>
   ),
-  // Cell symbols into an AFE chip
-  cell: (
-    <g strokeWidth="1.5">
-      {[0, 1, 2, 3].map((i) => (
-        <g key={i} transform={`translate(70, ${45 + i * 30})`}>
-          <line x1="0" y1="0" x2="0" y2="16" stroke={BLUE} />
-          <line x1="-8" y1="16" x2="8" y2="16" stroke={BLUE} />
-          <line x1="-4" y1="22" x2="4" y2="22" stroke={BLUE} />
-          <line x1="0" y1="22" x2="0" y2="30" stroke={BLUE} opacity={i === 3 ? 0 : 1} />
-          <line x1="8" y1="8" x2="60" y2="8" stroke={LINE} />
-        </g>
-      ))}
-      <rect x="150" y="50" width="80" height="100" rx="6" stroke={GREEN} />
-      <text x="163" y="105" fill={GREEN} fontSize="10" fontFamily="monospace">AFE</text>
-      {[0, 1, 2, 3, 4].map((i) => (
-        <line key={i} x1="230" y1={62 + i * 18} x2="260" y2={62 + i * 18} stroke={LINE} />
-      ))}
-      <path d="M 260 62 H 290 V 134 H 260" stroke={BLUE} />
-      <text x="268" y="102" fill={BLUE} fontSize="9" fontFamily="monospace">isoSPI</text>
-      <text x="70" y="180" fill={LINE} fontSize="10" fontFamily="monospace">16S MONITOR</text>
-    </g>
-  ),
-  // Series/parallel grid with sum
-  calculator: (
-    <g strokeWidth="1.5">
-      {[0, 1, 2].map((row) =>
-        [0, 1, 2, 3].map((col) => (
-          <rect
-            key={`${row}-${col}`}
-            x={70 + col * 44}
-            y={45 + row * 36}
-            width="30"
-            height="22"
-            rx="3"
-            stroke={row === 1 && col === 2 ? GREEN : LINE}
-          />
-        ))
-      )}
-      <line x1="100" y1="56" x2="114" y2="56" stroke={DIM} />
-      <line x1="144" y1="56" x2="158" y2="56" stroke={DIM} />
-      <line x1="188" y1="56" x2="202" y2="56" stroke={DIM} />
-      <path d="M 260 70 V 140 " stroke={DIM} />
-      <text x="285" y="70" fill={BLUE} fontSize="11" fontFamily="monospace">4S3P</text>
-      <text x="285" y="92" fill={LINE} fontSize="10" fontFamily="monospace">14.8 V</text>
-      <text x="285" y="112" fill={LINE} fontSize="10" fontFamily="monospace">15 Ah</text>
-      <text x="285" y="132" fill={GREEN} fontSize="10" fontFamily="monospace">222 Wh</text>
-      <text x="70" y="180" fill={LINE} fontSize="10" fontFamily="monospace">PACK CONFIG</text>
-    </g>
-  ),
   // Branching commits into a board outline
   incubator: (
     <g strokeWidth="1.5">
@@ -168,6 +119,41 @@ const visuals: Record<Project["visual"], React.ReactNode> = {
       <circle cx="200" cy="55" r="3" fill={BLUE} />
       <text x="208" y="50" fill={BLUE} fontSize="9" fontFamily="monospace">4.12 V</text>
       <text x="60" y="175" fill={LINE} fontSize="10" fontFamily="monospace">CYCLE 412 · CH 3/8</text>
+    </g>
+  ),
+  // Transmitter with PWM pulses to a receiver/servo
+  rc: (
+    <g strokeWidth="1.5">
+      <rect x="50" y="55" width="70" height="90" rx="8" stroke={LINE} />
+      <circle cx="72" cy="80" r="10" stroke={BLUE} />
+      <circle cx="98" cy="115" r="10" stroke={GREEN} />
+      <path d="M 130 70 Q 145 70 145 55" stroke={DIM} />
+      <path d="M 130 100 Q 145 100 145 55" stroke={DIM} />
+      <path d="M 150 40 Q 160 60 150 80 Q 160 100 150 120" stroke={LINE} strokeDasharray="3 4" />
+      {[0, 1, 2].map((i) => (
+        <path key={i} d={`M ${190 + i * 20} 70 Q ${200 + i * 20} 70 ${200 + i * 20} 90 Q ${200 + i * 20} 110 ${210 + i * 20} 110`} stroke={BLUE} opacity={0.9 - i * 0.25} />
+      ))}
+      <rect x="270" y="60" width="70" height="80" rx="8" stroke={GREEN} />
+      <text x="278" y="105" fill={GREEN} fontSize="10" fontFamily="monospace">RX</text>
+      <path d="M 305 140 V 160 H 330" stroke={BLUE} />
+      <circle cx="330" cy="160" r="4" stroke={BLUE} />
+      <text x="50" y="180" fill={LINE} fontSize="10" fontFamily="monospace">PWM · 6CH</text>
+    </g>
+  ),
+  // Master/slave registers with read/write arrows
+  modbus: (
+    <g strokeWidth="1.5">
+      <rect x="40" y="60" width="90" height="70" rx="6" stroke={BLUE} />
+      <text x="52" y="100" fill={BLUE} fontSize="10" fontFamily="monospace">MASTER</text>
+      <rect x="270" y="60" width="90" height="70" rx="6" stroke={GREEN} />
+      <text x="284" y="100" fill={GREEN} fontSize="10" fontFamily="monospace">SLAVE</text>
+      <path d="M 130 82 H 270" stroke={BLUE} />
+      <path d="M 250 76 L 270 82 L 250 88" stroke={BLUE} />
+      <path d="M 270 108 H 130" stroke={GREEN} />
+      <path d="M 150 102 L 130 108 L 150 114" stroke={GREEN} />
+      <text x="140" y="72" fill={LINE} fontSize="8" fontFamily="monospace">FC03 READ</text>
+      <text x="140" y="122" fill={LINE} fontSize="8" fontFamily="monospace">FC06 WRITE</text>
+      <text x="40" y="160" fill={LINE} fontSize="10" fontFamily="monospace">REG 40001–40008</text>
     </g>
   ),
 };
