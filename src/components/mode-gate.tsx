@@ -3,14 +3,14 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { FileText, Boxes, X } from "lucide-react";
-import { getStoredMode, setStoredMode } from "@/lib/mode";
+import { FileText, Boxes, Flag, X } from "lucide-react";
+import { getStoredMode, setStoredMode, type SiteMode } from "@/lib/mode";
 
 /**
- * First-visit entry choice between Classic and Electronic City.
+ * First-visit entry choice between Classic, Electronic City and F1 Track.
  * - No auto-selection into 3D; no artificial delay.
- * - Persists via localStorage; `?mode=classic|city` overrides and re-saves.
- * - Returning visitors skip the prompt (city users are sent to /city).
+ * - Persists via localStorage; `?mode=classic|city|f1` overrides and re-saves.
+ * - Returning visitors skip the prompt (3D users are sent to their mode).
  */
 export function ModeGate() {
   const router = useRouter();
@@ -32,24 +32,24 @@ export function ModeGate() {
       setStoredMode("classic");
       return;
     }
-    if (urlMode === "city") {
-      setStoredMode("city");
-      router.replace("/city");
+    if (urlMode === "city" || urlMode === "f1") {
+      setStoredMode(urlMode);
+      router.replace(`/${urlMode}`);
       return;
     }
 
     const stored = getStoredMode();
-    if (stored === "city" && !reason) {
-      router.replace("/city");
+    if ((stored === "city" || stored === "f1") && !reason) {
+      router.replace(`/${stored}`);
       return;
     }
     if (stored === null) setShowChoice(true);
   }, [params, router]);
 
-  function choose(mode: "classic" | "city") {
+  function choose(mode: SiteMode) {
     setStoredMode(mode);
     setShowChoice(false);
-    if (mode === "city") router.push("/city");
+    if (mode !== "classic") router.push(`/${mode}`);
   }
 
   return (
@@ -82,7 +82,7 @@ export function ModeGate() {
             initial={{ opacity: 0, scale: 0.97 }}
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="w-full max-w-2xl"
+            className="w-full max-w-3xl"
           >
             <p className="text-center font-mono text-xs uppercase tracking-[0.2em] text-accent">
               Choose your experience
@@ -93,7 +93,7 @@ export function ModeGate() {
             >
               How would you like to explore?
             </h2>
-            <div className="mt-8 grid gap-4 sm:grid-cols-2">
+            <div className="mt-8 grid gap-4 sm:grid-cols-3">
               <button
                 type="button"
                 onClick={() => choose("classic")}
@@ -126,6 +126,23 @@ export function ModeGate() {
                 </span>
                 <span className="mt-4 font-mono text-xs text-faint">
                   WebGL · ~mid-range device recommended
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => choose("f1")}
+                className="group flex flex-col items-start rounded-card border border-line bg-surface p-6 text-left shadow-card transition-all duration-200 hover:-translate-y-0.5 hover:border-amber-400/50 hover:shadow-card-hover"
+              >
+                <Flag className="h-6 w-6 text-amber-300" aria-hidden="true" />
+                <span className="mt-4 text-base font-semibold text-slate-50">
+                  F1 Track
+                </span>
+                <span className="mt-1.5 text-sm leading-relaxed text-muted">
+                  Drive an F1 car around a circuit — each pit stop opens a
+                  portfolio section.
+                </span>
+                <span className="mt-4 font-mono text-xs text-faint">
+                  WebGL · keyboard or touch
                 </span>
               </button>
             </div>

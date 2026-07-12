@@ -17,15 +17,21 @@ const eslintConfig = defineConfig([
     // React Three Fiber scene code: mutating refs/scene objects inside
     // useFrame is the intended R3F pattern (per-frame updates without
     // re-renders). The compiler-era immutability rules don't apply here.
-    files: ["src/components/city/**"],
+    files: ["src/components/city/**", "src/components/f1/**"],
     rules: {
       "react-hooks/immutability": "off",
     },
   },
   {
     // Entry gates initialize state from external stores (localStorage,
-    // URL params, WebGL capability) that can only be read post-mount.
-    files: ["src/components/mode-gate.tsx", "src/components/city/city-gate.tsx"],
+    // URL params, WebGL capability, pointer type) that can only be read
+    // post-mount.
+    files: [
+      "src/components/mode-gate.tsx",
+      "src/components/city/city-gate.tsx",
+      "src/components/f1/f1-gate.tsx",
+      "src/components/f1/hud.tsx",
+    ],
     rules: {
       "react-hooks/set-state-in-effect": "off",
     },

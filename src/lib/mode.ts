@@ -1,4 +1,4 @@
-export type SiteMode = "classic" | "city";
+export type SiteMode = "classic" | "city" | "f1";
 
 const KEY = "portfolio-mode";
 
@@ -6,7 +6,7 @@ export function getStoredMode(): SiteMode | null {
   if (typeof window === "undefined") return null;
   try {
     const v = window.localStorage.getItem(KEY);
-    return v === "classic" || v === "city" ? v : null;
+    return v === "classic" || v === "city" || v === "f1" ? v : null;
   } catch {
     return null;
   }
