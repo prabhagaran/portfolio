@@ -8,7 +8,7 @@ export function Skills() {
   return (
     <Section
       id="skills"
-      eyebrow="04 · Skills"
+      eyebrow="05 · Skills"
       title="Engineering competencies"
       description="Each competency links to the project or write-up that demonstrates it — judge the work, not a self-assigned score."
     >

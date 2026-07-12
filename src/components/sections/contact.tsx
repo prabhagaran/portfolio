@@ -56,7 +56,7 @@ export function Contact() {
   return (
     <Section
       id="contact"
-      eyebrow="10 · Contact"
+      eyebrow="11 · Contact"
       title="Let's build something reliable"
       description="Open to hardware design, BMS/BESS, and embedded systems roles — or a conversation about a hard battery problem."
     >

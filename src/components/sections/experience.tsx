@@ -8,7 +8,7 @@ export function ExperienceSection() {
   return (
     <Section
       id="experience"
-      eyebrow="06 · Experience"
+      eyebrow="07 · Experience"
       title="Where I've built"
       description="Production hardware shipped, teams supported, and systems still running in the field."
     >

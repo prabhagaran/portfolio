@@ -28,7 +28,7 @@ export function Workflow() {
   return (
     <Section
       id="workflow"
-      eyebrow="08 · Engineering Workflow"
+      eyebrow="09 · Engineering Workflow"
       title="From requirement to production"
       description="The same disciplined loop on every board — each stage gates the next, and nothing ships without data."
     >

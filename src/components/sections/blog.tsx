@@ -27,7 +27,7 @@ export function Blog({ posts }: { posts: PostMeta[] }) {
   return (
     <Section
       id="blog"
-      eyebrow="09 · Technical Articles"
+      eyebrow="10 · Technical Articles"
       title="Engineering notes"
       description="Writing about the problems I actually debug — battery systems, board design, and the firmware in between."
     >

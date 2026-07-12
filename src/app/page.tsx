@@ -3,6 +3,7 @@ import { ModeGate } from "@/components/mode-gate";
 import { Hero } from "@/components/sections/hero";
 import { About } from "@/components/sections/about";
 import { Projects } from "@/components/sections/projects";
+import { Models3D } from "@/components/sections/models-3d";
 import { TechStack } from "@/components/sections/tech-stack";
 import { Skills } from "@/components/sections/skills";
 import { GitHub } from "@/components/sections/github";
@@ -25,6 +26,9 @@ export default function Home() {
       <About />
       <div className="border-t border-line">
         <Projects />
+      </div>
+      <div className="border-t border-line">
+        <Models3D />
       </div>
       <div className="border-t border-line">
         <TechStack />

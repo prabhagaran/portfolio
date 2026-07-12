@@ -7,7 +7,7 @@ export function Certifications() {
   return (
     <Section
       id="certifications"
-      eyebrow="07 · Certifications"
+      eyebrow="08 · Certifications"
       title="Credentials"
       description="Formal training that backs the field experience."
     >

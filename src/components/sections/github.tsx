@@ -100,7 +100,7 @@ export async function GitHub() {
   return (
     <Section
       id="github"
-      eyebrow="05 · GitHub"
+      eyebrow="06 · GitHub"
       title="Open source activity"
       description="Repositories, languages, and contribution history — refreshed hourly from the GitHub API."
     >

@@ -33,7 +33,7 @@ export function TechStack() {
   return (
     <Section
       id="stack"
-      eyebrow="03 · Tech Stack"
+      eyebrow="04 · Tech Stack"
       title="Tools of the trade"
       description="Hover any item to see depth of experience. The stack runs from silicon to cloud — because battery systems do too."
     >
