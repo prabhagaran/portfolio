@@ -18,6 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(site.siteUrl),
   title: `${site.name} · ${site.role}`,
   description: site.tagline,
   keywords: site.keywords,
@@ -26,6 +27,13 @@ export const metadata: Metadata = {
     title: `${site.name} · ${site.role}`,
     description: site.tagline,
     type: "website",
+    url: site.siteUrl,
+    siteName: site.name,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${site.name} · ${site.role}`,
+    description: site.tagline,
   },
 };
 

@@ -16,8 +16,8 @@ export const skills: Skill[] = [
     description:
       "Mixed-signal board design from concept to production — power stages, sensing chains, protection circuits.",
     evidence: [
-      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
-      { label: "Cell Monitoring Board", href: "https://github.com/prabhagaran/cell-monitor-board" },
+      { label: "Egg Incubator", href: "https://github.com/prabhagaran/egg-incubator-esp32-rtos" },
+      { label: "RC Truck", href: "https://github.com/prabhagaran/rc-receiver-arduino" },
     ],
   },
   {
@@ -25,7 +25,6 @@ export const skills: Skill[] = [
     description:
       "Multi-layer layouts with controlled impedance, creepage/clearance for HV, EMC-driven stackups and routing.",
     evidence: [
-      { label: "Cell Monitoring Board", href: "https://github.com/prabhagaran/cell-monitor-board" },
       { label: "HV creepage article", href: "/blog/hv-pcb-creepage" },
     ],
   },
@@ -35,7 +34,7 @@ export const skills: Skill[] = [
       "Bare-metal and RTOS firmware on ARM Cortex-M — drivers, bootloaders, fault handlers, OTA pipelines.",
     evidence: [
       { label: "Fault handling article", href: "/blog/firmware-fault-handling" },
-      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
+      { label: "Egg Incubator", href: "https://github.com/prabhagaran/egg-incubator-esp32-rtos" },
     ],
   },
   {
@@ -43,7 +42,7 @@ export const skills: Skill[] = [
     description:
       "Cell monitoring AFEs, balancing strategies, SoC/SoH estimation, and safety architectures for Li-ion packs.",
     evidence: [
-      { label: "Battery Digital Twin", href: "https://github.com/prabhagaran/battery-digital-twin" },
+      { label: "Battery Digital Twin", href: "https://github.com/prabhagaran/battery-rack-digital-twin" },
       { label: "Cell balancing article", href: "/blog/cell-balancing-strategies" },
       { label: "SoC estimation article", href: "/blog/soc-estimation-kalman" },
     ],
@@ -61,8 +60,8 @@ export const skills: Skill[] = [
     description:
       "Partitioning cell-to-cloud systems: bus topologies, redundancy, isolation boundaries, failure domains.",
     evidence: [
-      { label: "Battery Rack Monitoring", href: "https://github.com/prabhagaran/battery-rack-monitor" },
-      { label: "Battery Testing Dashboard", href: "https://github.com/prabhagaran/battery-testing-dashboard" },
+      { label: "Invento", href: "https://github.com/prabhagaran/invento" },
+      { label: "Battery Digital Twin", href: "https://github.com/prabhagaran/battery-rack-digital-twin" },
     ],
   },
   {
@@ -71,7 +70,6 @@ export const skills: Skill[] = [
       "Oscilloscope, logic analyzer, thermal camera, CAN sniffer — root-causing issues across HW/FW boundaries.",
     evidence: [
       { label: "CAN debugging field guide", href: "/blog/can-bus-debugging" },
-      { label: "CAN Data Analyzer", href: "https://github.com/prabhagaran/can-data-analyzer" },
     ],
   },
   {
@@ -79,8 +77,8 @@ export const skills: Skill[] = [
     description:
       "Test-bench automation, HIL scripts, data pipelines, and report generation for validation campaigns.",
     evidence: [
-      { label: "CAN Data Analyzer", href: "https://github.com/prabhagaran/can-data-analyzer" },
-      { label: "Battery Testing Dashboard", href: "https://github.com/prabhagaran/battery-testing-dashboard" },
+      { label: "Modtool", href: "https://github.com/prabhagaran/modtool_py" },
+      { label: "Invento", href: "https://github.com/prabhagaran/invento" },
     ],
   },
   {
@@ -89,7 +87,6 @@ export const skills: Skill[] = [
       "Design review packages, test reports, interface control documents, and maintainable engineering wikis.",
     evidence: [
       { label: "Technical articles", href: "/#blog" },
-      { label: "Open Source Incubator", href: "https://github.com/prabhagaran/open-source-incubator" },
     ],
   },
 ];

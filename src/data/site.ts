@@ -3,6 +3,8 @@
  * Update the values here — every section reads from this file.
  */
 export const site = {
+  // Set NEXT_PUBLIC_SITE_URL once this is deployed — see .env.example.
+  siteUrl: process.env.NEXT_PUBLIC_SITE_URL ?? "https://your-domain.example",
   name: "Prabhagaran Sundaralingam",
   role: "Hardware Design Engineer",
   tagline:
